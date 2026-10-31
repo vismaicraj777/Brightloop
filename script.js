@@ -130,6 +130,8 @@ function showPage(pageName) {
 
     if (pageName === "Dashboard") {
         mainContent.innerHTML = dashboardHTML;
+        renderDashboardStats();
+        renderDashboardRevenueChart();
         return;
     }
 
@@ -167,6 +169,10 @@ function showPage(pageName) {
     }
     if (pageName === "Reports") {
         showReportsPage();
+        return;
+    }
+    if (pageName === "Settings") {
+        showSettingsPage();
         return;
     }
     
@@ -3327,3 +3333,240 @@ function showReportsPage() {
             `;
         }).join("");
     }
+    function renderDashboardRevenueChart() {
+
+    const chartContainer = document.getElementById("dashboardRevenueChart");
+
+    if (!chartContainer) return;
+
+    const monthlyRevenue = {};
+
+    // Prepare the last 6 months
+    for (let i = 5; i >= 0; i--) {
+
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        monthlyRevenue[key] = {
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            amount: 0
+        };
+    }
+
+    // Calculate collected revenue
+    invoices.forEach(invoice => {
+
+        if (!invoice.issueDate) return;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        if (monthlyRevenue[key]) {
+            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+        }
+    });
+
+    const maxRevenue = Math.max(
+        1,
+        ...Object.values(monthlyRevenue).map(item => item.amount)
+    );
+
+    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+        const height = (item.amount / maxRevenue) * 100;
+
+        return `
+            <div class="revenue-bar-item">
+                <div class="revenue-bar-value">
+                    ${formatPrice(item.amount)}
+                </div>
+
+                <div class="revenue-bar-track">
+                    <div class="revenue-bar-fill"
+                         style="height: ${height}%"></div>
+                </div>
+
+                <span>${item.label}</span>
+            </div>
+        `;
+
+    }).join("");
+}
+function renderDashboardStats() {
+
+    console.log("Dashboard invoice count:", invoices.length);
+    console.log("Dashboard subscription count:", subscriptions.length);
+    console.log("Dashboard invoices:", invoices);
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Monthly revenue collected
+    const monthlyRevenue = invoices.reduce((sum, invoice) => {
+
+        if (!invoice.issueDate) return sum;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+
+        if (
+            date.getMonth() === currentMonth &&
+            date.getFullYear() === currentYear
+        ) {
+            return sum + Number(invoice.amountPaid || 0);
+        }
+
+        return sum;
+
+    }, 0);
+
+    // Active subscriptions
+    const activeCount = subscriptions.filter(
+        subscription => subscription.status === "Active"
+    ).length;
+
+    // Outstanding payments
+    const outstanding = invoices.reduce((sum, invoice) => {
+
+        return sum + Math.max(
+            0,
+            Number(invoice.amount || 0) -
+            Number(invoice.amountPaid || 0)
+        );
+
+    }, 0);
+
+    // Pending invoices
+    const pendingCount = invoices.filter(invoice =>
+        ["Confirmed", "Partially Paid"].includes(invoice.status) &&
+        Number(invoice.amount) > Number(invoice.amountPaid || 0)
+    ).length;
+
+    // Overdue invoices
+    const overdueCount = invoices.filter(invoice => {
+
+        if (!invoice.dueDate) return false;
+
+        return (
+            invoice.dueDate < getLocalToday() &&
+            Number(invoice.amount) > Number(invoice.amountPaid || 0)
+        );
+
+    }).length;
+
+    document.getElementById("dashboardMonthlyRevenue").textContent =
+        formatPrice(monthlyRevenue);
+
+    document.getElementById("dashboardActiveSubscriptions").textContent =
+        activeCount;
+
+    document.getElementById("dashboardOutstanding").textContent =
+        formatPrice(outstanding);
+
+    document.getElementById("dashboardPendingInvoices").textContent =
+        `${pendingCount} invoices awaiting payment`;
+
+    document.getElementById("dashboardOverdueInvoices").textContent =
+        overdueCount;
+}
+
+function showSettingsPage() {
+    const settings = JSON.parse(localStorage.getItem("brightloopSettings")) || {
+        businessName: "Brightloop",
+        email: "",
+        currency: "INR",
+        timezone: "Asia/Kolkata",
+        billingCycle: "Monthly",
+        dueDays: 7,
+        paymentReminders: true,
+        overdueAlerts: true
+    };
+
+    mainContent.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1>Settings</h1>
+                <p>Manage your business preferences and account.</p>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-card">
+                <h2>🏢 Business Information</h2>
+                <label>Business Name</label>
+                <input id="settingBusiness" value="${settings.businessName}" />
+
+                <label>Admin Email</label>
+                <input id="settingEmail" type="email" value="${settings.email}" />
+
+                <label>Currency</label>
+                <select id="settingCurrency">
+                    <option value="INR" ${settings.currency === "INR" ? "selected" : ""}>INR (₹)</option>
+                    <option value="USD" ${settings.currency === "USD" ? "selected" : ""}>USD ($)</option>
+                    <option value="EUR" ${settings.currency === "EUR" ? "selected" : ""}>EUR (€)</option>
+                </select>
+
+                <label>Timezone</label>
+                <select id="settingTimezone">
+                    <option value="Asia/Kolkata" ${settings.timezone === "Asia/Kolkata" ? "selected" : ""}>India (IST)</option>
+                    <option value="UTC" ${settings.timezone === "UTC" ? "selected" : ""}>UTC</option>
+                </select>
+            </div>
+
+            <div class="settings-card">
+                <h2>💳 Billing Preferences</h2>
+                <label>Default Billing Cycle</label>
+                <select id="settingCycle">
+                    <option ${settings.billingCycle === "Monthly" ? "selected" : ""}>Monthly</option>
+                    <option ${settings.billingCycle === "Weekly" ? "selected" : ""}>Weekly</option>
+                    <option ${settings.billingCycle === "Yearly" ? "selected" : ""}>Yearly</option>
+                </select>
+
+                <label>Invoice Due Days</label>
+                <input id="settingDueDays" type="number" min="1" value="${settings.dueDays}" />
+            </div>
+
+            <div class="settings-card">
+                <h2>🔔 Notifications</h2>
+                <label>
+                    <input id="settingReminders" type="checkbox" ${settings.paymentReminders ? "checked" : ""} />
+                    Payment reminders
+                </label>
+                <label>
+                    <input id="settingAlerts" type="checkbox" ${settings.overdueAlerts ? "checked" : ""} />
+                    Overdue invoice alerts
+                </label>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveBrightloopSettings()">
+                Save Settings
+            </button>
+            <p id="settingsMessage"></p>
+        </div>
+    `;
+}
+
+function saveBrightloopSettings() {
+    const settings = {
+        businessName: document.getElementById("settingBusiness").value.trim(),
+        email: document.getElementById("settingEmail").value.trim(),
+        currency: document.getElementById("settingCurrency").value,
+        timezone: document.getElementById("settingTimezone").value,
+        billingCycle: document.getElementById("settingCycle").value,
+        dueDays: Number(document.getElementById("settingDueDays").value),
+        paymentReminders: document.getElementById("settingReminders").checked,
+        overdueAlerts: document.getElementById("settingAlerts").checked
+    };
+
+    if (!settings.businessName || settings.dueDays < 1) {
+        alert("Please enter a business name and valid invoice due days.");
+        return;
+    }
+
+    localStorage.setItem("brightloopSettings", JSON.stringify(settings));
+    document.getElementById("settingsMessage").textContent = "Settings saved successfully!";
+}
