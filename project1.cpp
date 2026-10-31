@@ -278,7 +278,7 @@ Session login() {
             user.lockedUntil - Clock::now()).count();
 
         cout << "Account temporarily locked. Try again in "
-             << max(0L, remaining) << " seconds.\n";
+             << max<decltype(remaining)>(0, remaining) << " seconds.\n";
 
         return session;
     }
