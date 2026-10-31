@@ -620,3 +620,31 @@ footer {
     }
 }
 
+/* Customer action buttons */
+
+.customer-action-btn {
+    border: none;
+    background: #F0EAFF;
+    color: #7655D9;
+    padding: 7px 12px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: 0.2s;
+}
+
+.customer-action-btn:hover {
+    background: #E4DAFF;
+}
+
+.customer-action-btn.delete-btn {
+    background: #FDECEF;
+    color: #D65F75;
+}
+
+.customer-action-btn.delete-btn:hover {
+    background: #F9DCE3;
+}
+
