@@ -1,7 +1,7 @@
-
 /* =====================================================
    BRIGHTLOOP - SUBSCRIPTION MANAGEMENT SYSTEM
-   Dashboard + Customers + Products + Subscriptions + Invoices
+   Dashboard + Customers + Products + Subscriptions
+   + Invoices + Payments
    Data storage: Browser localStorage
 ===================================================== */
 
@@ -55,6 +55,10 @@ let invoices = JSON.parse(
     localStorage.getItem("brightloopInvoices")
 ) || [];
 
+let payments = JSON.parse(
+    localStorage.getItem("brightloopPayments")
+) || [];
+
 
 function saveCustomersToStorage() {
     localStorage.setItem("brightloopCustomers", JSON.stringify(customers));
@@ -70,6 +74,10 @@ function saveSubscriptionsToStorage() {
 
 function saveInvoicesToStorage() {
     localStorage.setItem("brightloopInvoices", JSON.stringify(invoices));
+}
+
+function savePaymentsToStorage() {
+    localStorage.setItem("brightloopPayments", JSON.stringify(payments));
 }
 
 
@@ -111,6 +119,8 @@ function activateSidebarPage(pageName) {
 
 function showPage(pageName) {
 
+    localStorage.setItem("brightloopCurrentPage", pageName);
+
     if (pageName === "Dashboard") {
         mainContent.innerHTML = dashboardHTML;
         return;
@@ -136,6 +146,11 @@ function showPage(pageName) {
 
     if (pageName === "Invoices") {
         showInvoicesPage();
+        return;
+    }
+
+    if (pageName === "Payments") {
+        showPaymentsPage();
         return;
     }
 
@@ -878,8 +893,6 @@ function searchProducts() {
 
     renderProducts(filtered);
 }
-
-
 /* =====================================================
    7. SUBSCRIPTIONS MODULE
 ===================================================== */
@@ -1517,8 +1530,6 @@ function searchSubscriptions() {
 
     renderSubscriptions(filtered);
 }
-
-
 /* =====================================================
    8. INVOICES MODULE
 ===================================================== */
@@ -1536,7 +1547,6 @@ function showInvoicesPage() {
         </header>
 
         <section class="welcome-section">
-
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Invoices</h1>
@@ -1548,7 +1558,6 @@ function showInvoicesPage() {
             <button class="date-button" id="refreshInvoicesBtn">
                 ↻ Refresh
             </button>
-
         </section>
 
         <section class="stats-grid">
@@ -1574,7 +1583,7 @@ function showInvoicesPage() {
             <div class="stat-card pink">
                 <p>Outstanding</p>
                 <h2 id="outstandingInvoices">₹0</h2>
-                <span>Unpaid invoice value</span>
+                <span>Remaining unpaid value</span>
             </div>
 
         </section>
@@ -1584,7 +1593,7 @@ function showInvoicesPage() {
             <h3>All Invoices</h3>
 
             <p class="subtitle">
-                View invoice details and update payment status.
+                Confirm invoices and record full or partial payments.
             </p>
 
             <table>
@@ -1596,6 +1605,8 @@ function showInvoicesPage() {
                         <th>Issue Date</th>
                         <th>Due Date</th>
                         <th>Amount</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -1630,7 +1641,7 @@ function showInvoicesPage() {
             }
 
             if (button.classList.contains("pay-invoice-btn")) {
-                updateInvoiceStatus(index, "Paid");
+                openPaymentModal(index);
             }
 
             if (button.classList.contains("delete-invoice-btn")) {
@@ -1648,10 +1659,9 @@ function renderInvoices(invoiceList = invoices) {
     tableBody.innerHTML = "";
 
     if (!invoiceList.length) {
-
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8">
+                <td colspan="10">
                     No invoices found. Generate an invoice from a subscription.
                 </td>
             </tr>
@@ -1664,7 +1674,12 @@ function renderInvoices(invoiceList = invoices) {
     invoiceList.forEach(invoice => {
 
         const index = invoices.indexOf(invoice);
-        const statusClass = invoice.status.toLowerCase();
+
+        const paid = Number(invoice.amountPaid || 0);
+        const balance = Math.max(0, Number(invoice.amount) - paid);
+
+        const statusClass = invoice.status.toLowerCase()
+            .replace(/\s+/g, "-");
 
         let actionButtons = "";
 
@@ -1675,10 +1690,15 @@ function renderInvoices(invoiceList = invoices) {
             `;
         }
 
-        if (invoice.status === "Confirmed") {
+        if (
+            invoice.status === "Confirmed" ||
+            invoice.status === "Partially Paid"
+        ) {
             actionButtons = `
                 <button class="customer-action-btn pay-invoice-btn"
-                    data-index="${index}">Mark Paid</button>
+                    data-index="${index}">
+                    Record Payment
+                </button>
             `;
         }
 
@@ -1710,6 +1730,8 @@ function renderInvoices(invoiceList = invoices) {
             <td>${formatDate(invoice.issueDate)}</td>
             <td>${formatDate(invoice.dueDate)}</td>
             <td>${formatPrice(invoice.amount)}</td>
+            <td>${formatPrice(paid)}</td>
+            <td>${formatPrice(balance)}</td>
 
             <td>
                 <span class="status ${statusClass}">
@@ -1745,8 +1767,16 @@ function updateInvoiceStats() {
     ).length;
 
     const outstanding = invoices
-        .filter(invoice => invoice.status !== "Paid")
-        .reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+        .filter(invoice =>
+            ["Confirmed", "Partially Paid"].includes(invoice.status)
+        )
+        .reduce((sum, invoice) => {
+
+            const remaining =
+                Number(invoice.amount) - Number(invoice.amountPaid || 0);
+
+            return sum + Math.max(0, remaining);
+        }, 0);
 
     document.getElementById("totalInvoices").textContent = total;
     document.getElementById("draftInvoices").textContent = draft;
@@ -1816,6 +1846,8 @@ function generateInvoice(subscriptionIndex) {
 
         amount: Number(subscription.totalAmount),
 
+        amountPaid: 0,
+
         status: "Draft",
 
         createdAt: new Date().toISOString()
@@ -1825,7 +1857,6 @@ function generateInvoice(subscriptionIndex) {
 
     saveInvoicesToStorage();
 
-    // Move the next billing date forward.
     subscription.nextBilling = calculateNextBilling(
         billingDate,
         subscription.frequency
@@ -1835,10 +1866,7 @@ function generateInvoice(subscriptionIndex) {
 
     alert(`Invoice ${invoice.id} generated successfully!`);
 
-    // Automatically activate the Invoices sidebar item.
     activateSidebarPage("Invoices");
-
-    // Open the Invoices page.
     showInvoicesPage();
 }
 
@@ -1850,26 +1878,14 @@ function updateInvoiceStatus(index, newStatus) {
     const invoice = invoices[index];
     if (!invoice) return;
 
-    if (newStatus === "Confirmed") {
-
-        if (invoice.status !== "Draft") return;
-
-        if (!confirm(`Confirm invoice ${invoice.id}?`)) return;
-
-        invoice.status = "Confirmed";
-        invoice.confirmedAt = new Date().toISOString();
+    if (newStatus !== "Confirmed" || invoice.status !== "Draft") {
+        return;
     }
 
-    if (newStatus === "Paid") {
+    if (!confirm(`Confirm invoice ${invoice.id}?`)) return;
 
-        if (invoice.status !== "Confirmed") return;
-
-        if (!confirm(`Mark invoice ${invoice.id} as paid?`)) return;
-
-        invoice.status = "Paid";
-        invoice.paidAt = new Date().toISOString();
-        invoice.paymentMethod = "Not specified";
-    }
+    invoice.status = "Confirmed";
+    invoice.confirmedAt = new Date().toISOString();
 
     saveInvoicesToStorage();
     renderInvoices();
@@ -1882,6 +1898,15 @@ function deleteInvoice(index) {
 
     const invoice = invoices[index];
     if (!invoice) return;
+
+    const hasPayments = payments.some(
+        payment => payment.invoiceId === invoice.id
+    );
+
+    if (hasPayments) {
+        alert("This invoice has payment records. Delete its payments first.");
+        return;
+    }
 
     if (invoice.status === "Paid") {
         alert("Paid invoices cannot be deleted.");
@@ -1921,7 +1946,565 @@ function searchInvoices() {
 
 
 /* =====================================================
-   9. DATE HELPERS
+   9. PAYMENTS MODULE
+===================================================== */
+
+function showPaymentsPage() {
+
+    mainContent.innerHTML = `
+
+        <header class="topbar">
+            <div class="search-box">
+                <span>⌕</span>
+                <input type="text" id="paymentSearch"
+                    placeholder="Search payments...">
+            </div>
+        </header>
+
+        <section class="welcome-section">
+
+            <div>
+                <p class="eyebrow">WORKSPACE</p>
+                <h1>Payments</h1>
+                <p class="subtitle">
+                    Record and manage customer payments.
+                </p>
+            </div>
+
+            <button class="date-button" id="addPaymentBtn">
+                + Record Payment
+            </button>
+
+        </section>
+
+        <section class="stats-grid">
+
+            <div class="stat-card purple">
+                <p>Total Payments</p>
+                <h2 id="totalPayments">0</h2>
+                <span>Recorded transactions</span>
+            </div>
+
+            <div class="stat-card green">
+                <p>Total Collected</p>
+                <h2 id="totalCollected">₹0</h2>
+                <span>Money received</span>
+            </div>
+
+            <div class="stat-card orange">
+                <p>Outstanding</p>
+                <h2 id="paymentOutstanding">₹0</h2>
+                <span>Remaining invoice balances</span>
+            </div>
+
+            <div class="stat-card pink">
+                <p>Partial Payments</p>
+                <h2 id="partialPayments">0</h2>
+                <span>Invoices partly paid</span>
+            </div>
+
+        </section>
+
+        <section class="content-card">
+
+            <h3>Payment History</h3>
+
+            <p class="subtitle">
+                View all recorded payment transactions.
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Invoice ID</th>
+                        <th>Customer</th>
+                        <th>Payment Date</th>
+                        <th>Method</th>
+                        <th>Amount</th>
+                        <th>Note</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="paymentTableBody"></tbody>
+            </table>
+
+        </section>
+
+        <footer>© 2026 Brightloop Software</footer>
+    `;
+
+    renderPayments();
+
+    document.getElementById("paymentSearch")
+        .addEventListener("input", searchPayments);
+
+    document.getElementById("addPaymentBtn")
+        .addEventListener("click", () => openPaymentModal());
+
+    document.getElementById("paymentTableBody")
+        .addEventListener("click", event => {
+
+            const button = event.target.closest("button");
+            if (!button) return;
+
+            const index = Number(button.dataset.index);
+
+            if (button.classList.contains("delete-payment-btn")) {
+                deletePayment(index);
+            }
+        });
+}
+
+
+/* ---------- PAYMENT TABLE ---------- */
+
+function renderPayments(paymentList = payments) {
+
+    const tableBody = document.getElementById("paymentTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = "";
+
+    if (!paymentList.length) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    No payments recorded yet. Record your first payment!
+                </td>
+            </tr>
+        `;
+
+        updatePaymentStats();
+        return;
+    }
+
+    paymentList.forEach(payment => {
+
+        const index = payments.indexOf(payment);
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${escapeHTML(payment.id)}</td>
+            <td>${escapeHTML(payment.invoiceId)}</td>
+            <td>${escapeHTML(payment.customerName)}</td>
+            <td>${formatDate(payment.paymentDate)}</td>
+            <td>${escapeHTML(payment.method)}</td>
+            <td>${formatPrice(payment.amount)}</td>
+            <td>${escapeHTML(payment.note || "—")}</td>
+            <td>
+                <button class="customer-action-btn delete-payment-btn"
+                    data-index="${index}">Delete</button>
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+
+    updatePaymentStats();
+}
+
+
+/* ---------- PAYMENT STATISTICS ---------- */
+
+function updatePaymentStats() {
+
+    const totalPayments = payments.length;
+
+    const totalCollected = payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0
+    );
+
+    const outstanding = invoices
+        .filter(invoice =>
+            ["Confirmed", "Partially Paid"].includes(invoice.status)
+        )
+        .reduce((sum, invoice) => {
+
+            const balance =
+                Number(invoice.amount) - Number(invoice.amountPaid || 0);
+
+            return sum + Math.max(0, balance);
+        }, 0);
+
+    const partialCount = invoices.filter(
+        invoice => invoice.status === "Partially Paid"
+    ).length;
+
+    document.getElementById("totalPayments").textContent =
+        totalPayments;
+
+    document.getElementById("totalCollected").textContent =
+        formatPrice(totalCollected);
+
+    document.getElementById("paymentOutstanding").textContent =
+        formatPrice(outstanding);
+
+    document.getElementById("partialPayments").textContent =
+        partialCount;
+}
+
+
+/* ---------- OPEN PAYMENT FORM ---------- */
+
+function openPaymentModal(invoiceIndex = null) {
+
+    if (document.getElementById("paymentModal")) return;
+
+    const eligibleInvoices = invoices.filter(invoice =>
+        ["Confirmed", "Partially Paid"].includes(invoice.status) &&
+        Number(invoice.amount) > Number(invoice.amountPaid || 0)
+    );
+
+    if (!eligibleInvoices.length) {
+        alert("There are no confirmed invoices with outstanding balances.");
+        return;
+    }
+
+    const selectedInvoice = invoiceIndex !== null
+        ? invoices[invoiceIndex]
+        : null;
+
+    if (
+        invoiceIndex !== null &&
+        (!selectedInvoice ||
+        !["Confirmed", "Partially Paid"].includes(selectedInvoice.status))
+    ) {
+        alert("This invoice is not available for payment.");
+        return;
+    }
+
+    const modal = document.createElement("div");
+
+    modal.id = "paymentModal";
+    modal.className = "customer-modal-overlay";
+
+    const invoiceOptions = eligibleInvoices.map(invoice => {
+
+        const balance =
+            Number(invoice.amount) - Number(invoice.amountPaid || 0);
+
+        return `
+            <option value="${escapeHTML(invoice.id)}">
+                ${escapeHTML(invoice.id)} — ${escapeHTML(invoice.customerName)}
+                (Balance: ${formatPrice(balance)})
+            </option>
+        `;
+    }).join("");
+
+    modal.innerHTML = `
+
+        <div class="customer-modal">
+
+            <div class="modal-header">
+                <div>
+                    <h2>Record Payment</h2>
+                    <p>Enter the payment details below.</p>
+                </div>
+
+                <button type="button" class="modal-close"
+                    id="closePaymentModal">&times;</button>
+            </div>
+
+            <form id="paymentForm">
+
+                <div class="form-group">
+                    <label>Select Invoice</label>
+
+                    <select id="paymentInvoice" required>
+                        <option value="">Choose an invoice</option>
+                        ${invoiceOptions}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Outstanding Balance</label>
+                    <input type="text" id="paymentBalance"
+                        readonly value="₹0.00">
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Amount (₹)</label>
+                    <input type="number" id="paymentAmount"
+                        min="0.01" step="0.01" required
+                        placeholder="Enter amount">
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Method</label>
+
+                    <select id="paymentMethod" required>
+                        <option value="">Select method</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Date</label>
+                    <input type="date" id="paymentDate"
+                        value="${getLocalToday()}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Note (Optional)</label>
+                    <textarea id="paymentNote" rows="3"
+                        placeholder="Transaction reference or additional note"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelPayment">
+                        Cancel
+                    </button>
+
+                    <button type="submit">
+                        Save Payment
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const invoiceSelect = document.getElementById("paymentInvoice");
+    const amountInput = document.getElementById("paymentAmount");
+
+    if (selectedInvoice) {
+        invoiceSelect.value = selectedInvoice.id;
+    }
+
+    function updatePaymentBalance() {
+
+        const invoice = invoices.find(
+            item => item.id === invoiceSelect.value
+        );
+
+        if (!invoice) {
+            document.getElementById("paymentBalance").value =
+                formatPrice(0);
+
+            amountInput.removeAttribute("max");
+            return;
+        }
+
+        const balance = Math.max(
+            0,
+            Number(invoice.amount) - Number(invoice.amountPaid || 0)
+        );
+
+        document.getElementById("paymentBalance").value =
+            formatPrice(balance);
+
+        amountInput.max = balance.toFixed(2);
+        amountInput.placeholder = `Maximum ${balance.toFixed(2)}`;
+    }
+
+    invoiceSelect.addEventListener("change", updatePaymentBalance);
+
+    updatePaymentBalance();
+
+    document.getElementById("closePaymentModal")
+        .addEventListener("click", closePaymentModal);
+
+    document.getElementById("cancelPayment")
+        .addEventListener("click", closePaymentModal);
+
+    document.getElementById("paymentForm")
+        .addEventListener("submit", savePayment);
+
+    modal.addEventListener("click", event => {
+        if (event.target === modal) closePaymentModal();
+    });
+}
+
+
+function closePaymentModal() {
+    document.getElementById("paymentModal")?.remove();
+}
+
+
+/* ---------- SAVE PAYMENT ---------- */
+
+function savePayment(event) {
+
+    event.preventDefault();
+
+    const invoiceId =
+        document.getElementById("paymentInvoice").value;
+
+    const amount =
+        Number(document.getElementById("paymentAmount").value);
+
+    const method =
+        document.getElementById("paymentMethod").value;
+
+    const paymentDate =
+        document.getElementById("paymentDate").value;
+
+    const note =
+        document.getElementById("paymentNote").value.trim();
+
+    const invoice = invoices.find(
+        item => item.id === invoiceId
+    );
+
+    if (!invoice) {
+        alert("Please select a valid invoice.");
+        return;
+    }
+
+    if (!["Confirmed", "Partially Paid"].includes(invoice.status)) {
+        alert("Only confirmed invoices can receive payments.");
+        return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        alert("Enter a valid payment amount greater than zero.");
+        return;
+    }
+
+    if (!method || !paymentDate) {
+        alert("Please select a payment method and date.");
+        return;
+    }
+
+    const currentPaid = Number(invoice.amountPaid || 0);
+    const balance = Number(invoice.amount) - currentPaid;
+
+    if (amount > balance + 0.001) {
+        alert(`Payment cannot exceed the outstanding balance of ${formatPrice(balance)}.`);
+        return;
+    }
+
+    const payment = {
+
+        id: "PAY-" + Date.now().toString().slice(-8),
+
+        invoiceId: invoice.id,
+
+        customerName: invoice.customerName,
+        customerEmail: invoice.customerEmail,
+
+        amount,
+
+        method,
+        paymentDate,
+        note,
+
+        createdAt: new Date().toISOString()
+    };
+
+    payments.push(payment);
+
+    invoice.amountPaid = currentPaid + amount;
+
+    if (invoice.amountPaid >= Number(invoice.amount) - 0.001) {
+
+        invoice.amountPaid = Number(invoice.amount);
+        invoice.status = "Paid";
+        invoice.paidAt = new Date().toISOString();
+
+    } else {
+
+        invoice.status = "Partially Paid";
+    }
+
+    savePaymentsToStorage();
+    saveInvoicesToStorage();
+
+    closePaymentModal();
+
+    alert(
+        invoice.status === "Paid"
+            ? `Payment recorded! Invoice ${invoice.id} is now fully paid.`
+            : `Payment recorded! Remaining balance: ${formatPrice(
+                Number(invoice.amount) - invoice.amountPaid
+            )}`
+    );
+
+    activateSidebarPage("Payments");
+    showPaymentsPage();
+}
+
+
+/* ---------- DELETE PAYMENT ---------- */
+
+function deletePayment(index) {
+
+    const payment = payments[index];
+    if (!payment) return;
+
+    if (!confirm(`Delete payment ${payment.id}? This will restore the invoice balance.`)) {
+        return;
+    }
+
+    const invoice = invoices.find(
+        item => item.id === payment.invoiceId
+    );
+
+    if (invoice) {
+
+        invoice.amountPaid = Math.max(
+            0,
+            Number(invoice.amountPaid || 0) - Number(payment.amount)
+        );
+
+        if (invoice.amountPaid <= 0.001) {
+
+            invoice.amountPaid = 0;
+            invoice.status = "Confirmed";
+            delete invoice.paidAt;
+
+        } else {
+
+            invoice.status = "Partially Paid";
+            delete invoice.paidAt;
+        }
+
+        saveInvoicesToStorage();
+    }
+
+    payments.splice(index, 1);
+
+    savePaymentsToStorage();
+
+    renderPayments();
+}
+
+
+/* ---------- SEARCH PAYMENTS ---------- */
+
+function searchPayments() {
+
+    const input = document.getElementById("paymentSearch");
+    if (!input) return;
+
+    const value = input.value.toLowerCase().trim();
+
+    const filtered = payments.filter(payment =>
+
+        payment.id.toLowerCase().includes(value) ||
+        payment.invoiceId.toLowerCase().includes(value) ||
+        payment.customerName.toLowerCase().includes(value) ||
+        payment.method.toLowerCase().includes(value) ||
+        (payment.note || "").toLowerCase().includes(value)
+    );
+
+    renderPayments(filtered);
+}
+
+
+/* =====================================================
+   10. DATE HELPERS
 ===================================================== */
 
 function getLocalToday() {
@@ -1995,7 +2578,7 @@ function formatDate(dateValue) {
 
 
 /* =====================================================
-   10. SHARED HELPER FUNCTIONS
+   11. SHARED HELPER FUNCTIONS
 ===================================================== */
 
 function formatPrice(price) {
@@ -2025,7 +2608,7 @@ function escapeHTML(value) {
 
 
 /* =====================================================
-   11. OTHER PAGE PLACEHOLDERS
+   12. OTHER PAGE PLACEHOLDERS
 ===================================================== */
 
 function showPlaceholderPage(pageName) {
@@ -2063,7 +2646,10 @@ function showPlaceholderPage(pageName) {
 
 
 /* =====================================================
-   12. INITIAL PAGE
+   13. INITIAL PAGE
 ===================================================== */
 
-showPage("Dashboard");
+const savedPage = localStorage.getItem("brightloopCurrentPage") || "Dashboard";
+
+activateSidebarPage(savedPage);
+showPage(savedPage);
