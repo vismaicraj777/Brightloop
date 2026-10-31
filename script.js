@@ -59,6 +59,10 @@ let payments = JSON.parse(
     localStorage.getItem("brightloopPayments")
 ) || [];
 
+let discounts = JSON.parse(
+    localStorage.getItem("brightloopDiscounts")
+) || [];
+
 
 function saveCustomersToStorage() {
     localStorage.setItem("brightloopCustomers", JSON.stringify(customers));
@@ -80,6 +84,9 @@ function savePaymentsToStorage() {
     localStorage.setItem("brightloopPayments", JSON.stringify(payments));
 }
 
+function saveDiscountsToStorage() {
+    localStorage.setItem("brightloopDiscounts", JSON.stringify(discounts));
+}
 
 /* =====================================================
    3. SIDEBAR NAVIGATION
@@ -123,6 +130,8 @@ function showPage(pageName) {
 
     if (pageName === "Dashboard") {
         mainContent.innerHTML = dashboardHTML;
+        renderDashboardStats();
+        renderDashboardRevenueChart();
         return;
     }
 
@@ -154,6 +163,19 @@ function showPage(pageName) {
         return;
     }
 
+    if (pageName === "Discounts") {
+        showDiscountsPage();
+        return;
+    }
+    if (pageName === "Reports") {
+        showReportsPage();
+        return;
+    }
+    if (pageName === "Settings") {
+        showSettingsPage();
+        return;
+    }
+    
     showPlaceholderPage(pageName);
 }
 
@@ -210,6 +232,53 @@ function showCustomersPage() {
 
         <footer>© 2026 Brightloop Software</footer>
     `;
+    const chartContainer = document.getElementById("monthlyRevenueChart");
+
+    const monthlyRevenue = {};
+
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        monthlyRevenue[key] = {
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            amount: 0
+        };
+    }
+
+    invoices.forEach(invoice => {
+        if (!invoice.issueDate) return;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        if (monthlyRevenue[key]) {
+            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+        }
+    });
+
+    const maxRevenue = Math.max(
+        1,
+        ...Object.values(monthlyRevenue).map(item => item.amount)
+    );
+
+    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+        const height = (item.amount / maxRevenue) * 100;
+
+        return `
+            <div class="revenue-bar-item">
+                <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
+                <div class="revenue-bar-track">
+                    <div class="revenue-bar-fill" style="height: ${height}%"></div>
+                </div>
+                <span>${item.label}</span>
+            </div>
+        `;
+    }).join("");
 
     renderCustomers();
 
@@ -1229,9 +1298,11 @@ function openSubscriptionModal(subscriptionIndex = null) {
                     </select>
                 </div>
 
+                <div id="paymentInvoiceSummary" class="payment-invoice-summary"></div>
+
                 <div class="form-group">
-                    <label>Subscription Amount</label>
-                    <input type="text" id="subscriptionAmountPreview"
+                    <label>Outstanding Balance</label>
+                    <input type="text" id="paymentBalance"
                         readonly value="₹0.00">
                 </div>
 
@@ -1729,7 +1800,28 @@ function renderInvoices(invoiceList = invoices) {
 
             <td>${formatDate(invoice.issueDate)}</td>
             <td>${formatDate(invoice.dueDate)}</td>
-            <td>${formatPrice(invoice.amount)}</td>
+            <td>
+            <div class="invoice-amount-details">
+                <span class="invoice-subtotal">
+                    ${formatPrice(invoice.subtotal ?? invoice.amount)}
+                </span>
+
+                ${
+                    Number(invoice.discountAmount || 0) > 0
+                        ? `
+                            <small class="invoice-discount">
+                                ${escapeHTML(invoice.discountName || "Discount")}
+                                (-${formatPrice(invoice.discountAmount)})
+                            </small>
+                        `
+                        : ""
+                }
+
+                <strong class="invoice-final-amount">
+                    ${formatPrice(invoice.amount)}
+                </strong>
+            </div>
+        </td>
             <td>${formatPrice(paid)}</td>
             <td>${formatPrice(balance)}</td>
 
@@ -1740,10 +1832,12 @@ function renderInvoices(invoiceList = invoices) {
             </td>
 
             <td>
-                ${actionButtons}
+                <div class="invoice-actions">
+                    ${actionButtons}
 
-                <button class="customer-action-btn delete-invoice-btn"
-                    data-index="${index}">Delete</button>
+                    <button class="customer-action-btn delete-invoice-btn"
+                        data-index="${index}">Delete</button>
+                </div>
             </td>
         `;
 
@@ -1823,7 +1917,19 @@ function generateInvoice(subscriptionIndex) {
         alert("The customer linked to this subscription could not be found.");
         return;
     }
+    // Calculate applicable discount
+    const appliedDiscount = calculateApplicableDiscount(
+        subscription,
+        billingDate
+    );
 
+    const subtotal = Number(subscription.totalAmount);
+
+    const discountAmount = appliedDiscount
+        ? appliedDiscount.discountAmount
+        : 0;
+
+    const finalAmount = subtotal - discountAmount;
     const invoice = {
 
         id: "INV-" + Date.now().toString().slice(-8),
@@ -1844,7 +1950,19 @@ function generateInvoice(subscriptionIndex) {
 
         dueDate: addDaysToDate(getLocalToday(), 7),
 
-        amount: Number(subscription.totalAmount),
+        subtotal: subtotal,
+
+        discountId: appliedDiscount
+            ? appliedDiscount.discount.id
+            : null,
+
+        discountName: appliedDiscount
+            ? appliedDiscount.discount.name
+            : null,
+
+        discountAmount: discountAmount,
+
+        amount: finalAmount,
 
         amountPaid: 0,
 
@@ -1854,6 +1972,14 @@ function generateInvoice(subscriptionIndex) {
     };
 
     invoices.push(invoice);
+
+    // Update discount usage count
+    if (appliedDiscount) {
+        appliedDiscount.discount.usedCount =
+            Number(appliedDiscount.discount.usedCount || 0) + 1;
+
+        saveDiscountsToStorage();
+    }
 
     saveInvoicesToStorage();
 
@@ -2211,6 +2337,7 @@ function openPaymentModal(invoiceIndex = null) {
             </div>
 
             <form id="paymentForm">
+                <div id="paymentInvoiceSummary" class="payment-invoice-summary"></div>
 
                 <div class="form-group">
                     <label>Select Invoice</label>
@@ -2285,12 +2412,14 @@ function openPaymentModal(invoiceIndex = null) {
     function updatePaymentBalance() {
 
         const invoice = invoices.find(
-            item => item.id === invoiceSelect.value
+            item => String(item.id) === String(invoiceSelect.value)
         );
 
         if (!invoice) {
             document.getElementById("paymentBalance").value =
                 formatPrice(0);
+
+            document.getElementById("paymentInvoiceSummary").innerHTML = "";
 
             amountInput.removeAttribute("max");
             return;
@@ -2300,6 +2429,33 @@ function openPaymentModal(invoiceIndex = null) {
             0,
             Number(invoice.amount) - Number(invoice.amountPaid || 0)
         );
+        const subtotal = Number(invoice.subtotal ?? invoice.amount);
+        const discountAmount = Number(invoice.discountAmount || 0);
+
+        document.getElementById("paymentInvoiceSummary").innerHTML = `
+            <h3>Invoice Summary</h3>
+
+            <div class="payment-summary-row">
+                <span>Original Amount</span>
+                <span>${formatPrice(subtotal)}</span>
+            </div>
+
+            ${
+                discountAmount > 0
+                    ? `
+                        <div class="payment-summary-row discount">
+                            <span>${escapeHTML(invoice.discountName || "Discount")}</span>
+                            <span>-${formatPrice(discountAmount)}</span>
+                        </div>
+                    `
+                    : ""
+            }
+
+            <div class="payment-summary-row final">
+                <strong>Final Invoice Amount</strong>
+                <strong>${formatPrice(invoice.amount)}</strong>
+            </div>
+        `;
 
         document.getElementById("paymentBalance").value =
             formatPrice(balance);
@@ -2309,8 +2465,6 @@ function openPaymentModal(invoiceIndex = null) {
     }
 
     invoiceSelect.addEventListener("change", updatePaymentBalance);
-
-    updatePaymentBalance();
 
     document.getElementById("closePaymentModal")
         .addEventListener("click", closePaymentModal);
@@ -2324,6 +2478,9 @@ function openPaymentModal(invoiceIndex = null) {
     modal.addEventListener("click", event => {
         if (event.target === modal) closePaymentModal();
     });
+
+    // Update the balance only after registering all event listeners
+    updatePaymentBalance();
 }
 
 
@@ -2606,6 +2763,372 @@ function escapeHTML(value) {
     });
 }
 
+function showDiscountsPage() {
+    const content = mainContent;
+
+    content.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1>Discounts</h1>
+                <p>Manage discounts and promotional offers.</p>
+            </div>
+            <button class="primary-btn" onclick="openDiscountModal()">
+                + Create Discount
+            </button>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h2>All Discounts</h2>
+                <input
+                    type="text"
+                    id="discountSearch"
+                    placeholder="Search discounts..."
+                    oninput="renderDiscountsTable()"
+                >
+            </div>
+
+            <div id="discountsTableContainer"></div>
+        </div>
+    `;
+
+    renderDiscountsTable();
+}
+
+function renderDiscountsTable() {
+    const container = document.getElementById("discountsTableContainer");
+
+    if (!container) return;
+
+    const searchInput = document.getElementById("discountSearch");
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+
+    const filteredDiscounts = discounts.filter(discount =>
+        discount.name.toLowerCase().includes(searchTerm)
+    );
+
+    if (filteredDiscounts.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">No discounts found. Create your first discount!</p>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Discount Name</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Usage</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredDiscounts.map(discount => `
+                    <tr>
+                        <td>${discount.name}</td>
+                        <td>${discount.type}</td>
+                        <td>${discount.type === "Percentage"
+                            ? discount.value + "%"
+                            : "₹" + discount.value}</td>
+                        <td>${discount.usedCount || 0} / ${discount.usageLimit || "Unlimited"}</td>
+                        <td>
+                            <button class="discount-action-btn edit-btn"
+                                onclick="editDiscount('${discount.id}')">
+                                Edit
+                            </button>
+
+                            <button class="discount-action-btn delete-btn"
+                                onclick="deleteDiscount('${discount.id}')">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join("")}
+            </tbody>
+        </table>
+    `;
+}
+
+function openDiscountModal(discountId = null) {
+    const discount = discountId
+        ? discounts.find(d => d.id === discountId)
+        : null;
+
+    const content = document.body;
+
+    const modal = document.createElement("div");
+    modal.className = "customer-modal-overlay";
+    modal.id = "discountModal";
+
+    modal.innerHTML = `
+        <div class="customer-modal">
+            <div class="modal-header">
+                <h2>${discount ? "Edit Discount" : "Create Discount"}</h2>
+                <button type="button" class="modal-close" onclick="closeDiscountModal()">×</button>
+            </div>
+
+            <form id="discountForm">
+                <div class="form-group">
+                    <label>Discount Name</label>
+                    <input
+                        type="text"
+                        id="discountName"
+                        value="${discount ? discount.name : ""}"
+                        placeholder="e.g. Summer Sale"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Discount Type</label>
+                    <select id="discountType">
+                        <option value="Percentage" ${discount?.type === "Percentage" ? "selected" : ""}>Percentage (%)</option>
+                        <option value="Fixed" ${discount?.type === "Fixed" ? "selected" : ""}>Fixed Amount (₹)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Discount Value</label>
+                    <input
+                        type="number"
+                        id="discountValue"
+                        min="0.01"
+                        step="0.01"
+                        value="${discount ? discount.value : ""}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Purchase Amount (₹)</label>
+                    <input
+                        type="number"
+                        id="discountMinimum"
+                        min="0"
+                        value="${discount ? discount.minimumPurchase || 0 : 0}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Quantity</label>
+                    <input
+                        type="number"
+                        id="discountQuantity"
+                        min="1"
+                        value="${discount ? discount.minimumQuantity || 1 : 1}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input
+                        type="date"
+                        id="discountStartDate"
+                        value="${discount ? discount.startDate || "" : ""}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <input
+                        type="date"
+                        id="discountEndDate"
+                        value="${discount ? discount.endDate || "" : ""}"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Usage Limit</label>
+                    <input
+                        type="number"
+                        id="discountUsageLimit"
+                        min="1"
+                        value="${discount ? discount.usageLimit || "" : ""}"
+                        placeholder="Leave empty for unlimited"
+                    >
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeDiscountModal()">Cancel</button>
+                    <button type="submit" class="primary-btn">
+                        Save Discount
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    content.appendChild(modal);
+
+    document.getElementById("discountForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        saveDiscount(discountId);
+    });
+}
+
+function closeDiscountModal() {
+    const modal = document.getElementById("discountModal");
+    if (modal) modal.remove();
+}
+
+function editDiscount(discountId) {
+    openDiscountModal(discountId);
+}
+
+function saveDiscount(discountId = null) {
+    const name = document.getElementById("discountName").value.trim();
+    const type = document.getElementById("discountType").value;
+    const value = Number(document.getElementById("discountValue").value);
+    const minimumPurchase = Number(document.getElementById("discountMinimum").value) || 0;
+    const minimumQuantity = Number(document.getElementById("discountQuantity").value) || 1;
+    const startDate = document.getElementById("discountStartDate").value;
+    const endDate = document.getElementById("discountEndDate").value;
+    const usageLimitInput = document.getElementById("discountUsageLimit").value;
+    const usageLimit = usageLimitInput === "" ? null : Number(usageLimitInput);
+
+    if (!name || value <= 0) {
+        alert("Please enter a valid discount name and value.");
+        return;
+    }
+
+    if (type === "Percentage" && value > 100) {
+        alert("Percentage discount cannot exceed 100%.");
+        return;
+    }
+
+    if (minimumPurchase < 0 || minimumQuantity < 1 ||
+        (usageLimit !== null && usageLimit < 1)) {
+        alert("Please enter valid minimum and usage limits.");
+        return;
+    }
+
+    if (!startDate || !endDate || endDate < startDate) {
+        alert("Please enter valid dates. Expiry date must be on or after the start date.");
+        return;
+    }
+
+    const existingDiscount = discountId
+        ? discounts.find(d => d.id === discountId)
+        : null;
+
+    const discountData = {
+        id: discountId || "discount_" + Date.now(),
+        name,
+        type,
+        value,
+        minimumPurchase,
+        minimumQuantity,
+        startDate,
+        endDate,
+        usageLimit,
+        usedCount: existingDiscount ? existingDiscount.usedCount || 0 : 0
+    };
+
+    if (existingDiscount) {
+        const index = discounts.findIndex(d => d.id === discountId);
+        discounts[index] = discountData;
+    } else {
+        discounts.push(discountData);
+    }
+
+    saveDiscountsToStorage();
+    closeDiscountModal();
+    renderDiscountsTable();
+
+    alert("Discount saved successfully!");
+}
+
+function deleteDiscount(discountId) {
+    const confirmDelete = confirm(
+        "Are you sure you want to delete this discount?"
+    );
+
+    if (!confirmDelete) return;
+
+    discounts = discounts.filter(
+        discount => discount.id !== discountId
+    );
+
+    saveDiscountsToStorage();
+    renderDiscountsTable();
+
+    alert("Discount deleted successfully!");
+}
+
+/* ========================================
+   AUTOMATIC DISCOUNT CALCULATION
+======================================== */
+
+function calculateApplicableDiscount(subscription, billingDate) {
+
+    const subtotal = Number(subscription.totalAmount);
+    const quantity = Number(subscription.quantity) || 1;
+
+    const eligibleDiscounts = discounts.filter(discount => {
+
+        // Check discount date range
+        if (billingDate < discount.startDate ||
+            billingDate > discount.endDate) {
+            return false;
+        }
+
+        // Check minimum purchase
+        if (subtotal < Number(discount.minimumPurchase || 0)) {
+            return false;
+        }
+
+        // Check minimum quantity
+        if (quantity < Number(discount.minimumQuantity || 1)) {
+            return false;
+        }
+
+        // Check usage limit
+        if (discount.usageLimit !== null &&
+            discount.usageLimit !== "" &&
+            Number(discount.usedCount || 0) >= Number(discount.usageLimit)) {
+            return false;
+        }
+
+        return true;
+    });
+
+    if (eligibleDiscounts.length === 0) {
+        return null;
+    }
+
+    // Calculate savings for every eligible discount
+    const calculatedDiscounts = eligibleDiscounts.map(discount => {
+
+        let discountAmount = 0;
+
+        if (discount.type === "Percentage") {
+            discountAmount = subtotal * (discount.value / 100);
+        } else {
+            discountAmount = Number(discount.value);
+        }
+
+        // Discount cannot exceed invoice subtotal
+        discountAmount = Math.min(discountAmount, subtotal);
+
+        return {
+            discount,
+            discountAmount
+        };
+    });
+
+    // Apply the discount that gives the highest savings
+    calculatedDiscounts.sort(
+        (a, b) => b.discountAmount - a.discountAmount
+    );
+
+    return calculatedDiscounts[0];
+}   
+
 
 /* =====================================================
    12. OTHER PAGE PLACEHOLDERS
@@ -2653,3 +3176,448 @@ const savedPage = localStorage.getItem("brightloopCurrentPage") || "Dashboard";
 
 activateSidebarPage(savedPage);
 showPage(savedPage);
+
+/* ========================================
+   REPORTS & ANALYTICS
+======================================== */
+
+function showReportsPage() {
+
+    const totalRevenue = invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amountPaid || 0),
+        0
+    );
+
+    const outstandingAmount = invoices.reduce(
+        (sum, invoice) =>
+            sum + Math.max(
+                0,
+                Number(invoice.amount || 0) -
+                Number(invoice.amountPaid || 0)
+            ),
+        0
+    );
+
+    const activeSubscriptions = subscriptions.filter(
+        subscription =>
+            ["Active", "Confirmed"].includes(subscription.status)
+    ).length;
+
+    const totalInvoices = invoices.length;
+
+    mainContent.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1>Reports & Analytics</h1>
+                <p>Track your business performance and financial activity.</p>
+            </div>
+        </div>
+
+        <div class="reports-grid">
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">💰</div>
+                <p>Total Revenue Collected</p>
+                <h2>${formatPrice(totalRevenue)}</h2>
+                <small>Payments received from invoices</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">📊</div>
+                <p>Outstanding Payments</p>
+                <h2>${formatPrice(outstandingAmount)}</h2>
+                <small>Amount yet to be collected</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">🔄</div>
+                <p>Active Subscriptions</p>
+                <h2>${activeSubscriptions}</h2>
+                <small>Confirmed and active subscriptions</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">🧾</div>
+                <p>Total Invoices</p>
+                <h2>${totalInvoices}</h2>
+                <small>Invoices generated</small>
+            </div>
+
+        </div>
+
+        <div class="content-card revenue-chart-card">
+            <div class="card-header">
+                <h2>Monthly Revenue</h2>
+                <span>Payments collected over the last 6 months</span>
+            </div>
+
+            <div id="monthlyRevenueChart" class="monthly-revenue-chart"></div>
+        </div>
+        <div class="content-card reports-overview">
+            <div class="card-header">
+                <h2>Business Overview</h2>
+            </div>
+
+            <div class="reports-overview-content">
+                <p>
+                    <strong>${invoices.filter(i => i.status === "Paid").length}</strong>
+                    Fully Paid Invoices
+                </p>
+
+                <p>
+                    <strong>${invoices.filter(i =>
+                        ["Confirmed", "Partially Paid"].includes(i.status)
+                    ).length}</strong>
+                    Pending Invoices
+                </p>
+
+                <p>
+                    <strong>${subscriptions.length}</strong>
+                    Total Subscriptions
+                </p>
+
+                <p>
+                    <strong>${customers.length}</strong>
+                    Total Customers
+                </p>
+            </div>
+        </div>
+        `;
+
+        // Generate Monthly Revenue Chart
+        const chartContainer = document.getElementById("monthlyRevenueChart");
+
+        const monthlyRevenue = {};
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(1);
+            date.setMonth(date.getMonth() - i);
+
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            monthlyRevenue[key] = {
+                label: date.toLocaleString("en-IN", { month: "short" }),
+                amount: 0
+            };
+        }
+
+        invoices.forEach(invoice => {
+            if (!invoice.issueDate) return;
+
+            const date = new Date(invoice.issueDate + "T00:00:00");
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            if (monthlyRevenue[key]) {
+                monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+            }
+        });
+
+        const maxRevenue = Math.max(
+            1,
+            ...Object.values(monthlyRevenue).map(item => item.amount)
+        );
+
+        chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+            const height = (item.amount / maxRevenue) * 100;
+
+            return `
+                <div class="revenue-bar-item">
+                    <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
+                    <div class="revenue-bar-track">
+                        <div class="revenue-bar-fill" style="height: ${height}%"></div>
+                    </div>
+                    <span>${item.label}</span>
+                </div>
+            `;
+        }).join("");
+    }
+    function renderDashboardRevenueChart() {
+
+    const chartContainer = document.getElementById("dashboardRevenueChart");
+
+    if (!chartContainer) return;
+
+    const monthlyRevenue = {};
+
+    // Prepare the last 6 months
+    for (let i = 5; i >= 0; i--) {
+
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        monthlyRevenue[key] = {
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            amount: 0
+        };
+    }
+
+    // Calculate collected revenue
+    invoices.forEach(invoice => {
+
+        if (!invoice.issueDate) return;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        if (monthlyRevenue[key]) {
+            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+        }
+    });
+
+    const maxRevenue = Math.max(
+        1,
+        ...Object.values(monthlyRevenue).map(item => item.amount)
+    );
+
+    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+        const height = (item.amount / maxRevenue) * 100;
+
+        return `
+            <div class="revenue-bar-item">
+                <div class="revenue-bar-value">
+                    ${formatPrice(item.amount)}
+                </div>
+
+                <div class="revenue-bar-track">
+                    <div class="revenue-bar-fill"
+                         style="height: ${height}%"></div>
+                </div>
+
+                <span>${item.label}</span>
+            </div>
+        `;
+
+    }).join("");
+}
+function renderDashboardStats() {
+
+    console.log("Dashboard invoice count:", invoices.length);
+    console.log("Dashboard subscription count:", subscriptions.length);
+    console.log("Dashboard invoices:", invoices);
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    // Monthly revenue collected
+    const monthlyRevenue = invoices.reduce((sum, invoice) => {
+
+        if (!invoice.issueDate) return sum;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+
+        if (
+            date.getMonth() === currentMonth &&
+            date.getFullYear() === currentYear
+        ) {
+            return sum + Number(invoice.amountPaid || 0);
+        }
+
+        return sum;
+
+    }, 0);
+
+    // Active subscriptions
+    const activeCount = subscriptions.filter(
+        subscription => subscription.status === "Active"
+    ).length;
+
+    // Outstanding payments
+    const outstanding = invoices.reduce((sum, invoice) => {
+
+        return sum + Math.max(
+            0,
+            Number(invoice.amount || 0) -
+            Number(invoice.amountPaid || 0)
+        );
+
+    }, 0);
+
+    // Pending invoices
+    const pendingCount = invoices.filter(invoice =>
+        ["Confirmed", "Partially Paid"].includes(invoice.status) &&
+        Number(invoice.amount) > Number(invoice.amountPaid || 0)
+    ).length;
+
+    // Overdue invoices
+    const overdueCount = invoices.filter(invoice => {
+
+        if (!invoice.dueDate) return false;
+
+        return (
+            invoice.dueDate < getLocalToday() &&
+            Number(invoice.amount) > Number(invoice.amountPaid || 0)
+        );
+
+    }).length;
+
+    document.getElementById("dashboardMonthlyRevenue").textContent =
+        formatPrice(monthlyRevenue);
+
+    document.getElementById("dashboardActiveSubscriptions").textContent =
+        activeCount;
+
+    document.getElementById("dashboardOutstanding").textContent =
+        formatPrice(outstanding);
+
+    document.getElementById("dashboardPendingInvoices").textContent =
+        `${pendingCount} invoices awaiting payment`;
+
+    document.getElementById("dashboardOverdueInvoices").textContent =
+        overdueCount;
+}
+
+function showSettingsPage() {
+    const settings = JSON.parse(localStorage.getItem("brightloopSettings")) || {
+        businessName: "Brightloop",
+        email: "",
+        currency: "INR",
+        timezone: "Asia/Kolkata",
+        billingCycle: "Monthly",
+        dueDays: 7,
+        paymentReminders: true,
+        overdueAlerts: true
+    };
+
+    mainContent.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1>Settings</h1>
+                <p>Manage your business preferences and account.</p>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-card">
+                <h2>🏢 Business Information</h2>
+                <label>Business Name</label>
+                <input id="settingBusiness" value="${settings.businessName}" />
+
+                <label>Admin Email</label>
+                <input id="settingEmail" type="email" value="${settings.email}" />
+
+                <label>Currency</label>
+                <select id="settingCurrency">
+                    <option value="INR" ${settings.currency === "INR" ? "selected" : ""}>INR (₹)</option>
+                    <option value="USD" ${settings.currency === "USD" ? "selected" : ""}>USD ($)</option>
+                    <option value="EUR" ${settings.currency === "EUR" ? "selected" : ""}>EUR (€)</option>
+                </select>
+
+                <label>Timezone</label>
+                <select id="settingTimezone">
+                    <option value="Asia/Kolkata" ${settings.timezone === "Asia/Kolkata" ? "selected" : ""}>India (IST)</option>
+                    <option value="UTC" ${settings.timezone === "UTC" ? "selected" : ""}>UTC</option>
+                </select>
+            </div>
+
+            <div class="settings-card">
+                <h2>💳 Billing Preferences</h2>
+                <label>Default Billing Cycle</label>
+                <select id="settingCycle">
+                    <option ${settings.billingCycle === "Monthly" ? "selected" : ""}>Monthly</option>
+                    <option ${settings.billingCycle === "Weekly" ? "selected" : ""}>Weekly</option>
+                    <option ${settings.billingCycle === "Yearly" ? "selected" : ""}>Yearly</option>
+                </select>
+
+                <label>Invoice Due Days</label>
+                <input id="settingDueDays" type="number" min="1" value="${settings.dueDays}" />
+            </div>
+
+            <div class="settings-card">
+                <h2>🔔 Notifications</h2>
+                <label>
+                    <input id="settingReminders" type="checkbox" ${settings.paymentReminders ? "checked" : ""} />
+                    Payment reminders
+                </label>
+                <label>
+                    <input id="settingAlerts" type="checkbox" ${settings.overdueAlerts ? "checked" : ""} />
+                    Overdue invoice alerts
+                </label>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveBrightloopSettings()">
+                Save Settings
+            </button>
+            <p id="settingsMessage"></p>
+        </div>
+    `;
+}
+
+function saveBrightloopSettings() {
+    const settings = {
+        businessName: document.getElementById("settingBusiness").value.trim(),
+        email: document.getElementById("settingEmail").value.trim(),
+        currency: document.getElementById("settingCurrency").value,
+        timezone: document.getElementById("settingTimezone").value,
+        billingCycle: document.getElementById("settingCycle").value,
+        dueDays: Number(document.getElementById("settingDueDays").value),
+        paymentReminders: document.getElementById("settingReminders").checked,
+        overdueAlerts: document.getElementById("settingAlerts").checked
+    };
+
+    if (!settings.businessName || settings.dueDays < 1) {
+        alert("Please enter a business name and valid invoice due days.");
+        return;
+    }
+
+    localStorage.setItem("brightloopSettings", JSON.stringify(settings));
+    document.getElementById("settingsMessage").textContent = "Settings saved successfully!";
+}
+
+function showLoginScreen() {
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("appContainer").style.display = "none";
+}
+
+function showApp() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("appContainer").style.display = "flex";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const loginForm = document.getElementById("loginForm");
+
+    if (localStorage.getItem("brightloopLoggedIn") === "true") {
+        showApp();
+    } else {
+        showLoginScreen();
+    }
+
+    loginForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!email || password.length < 4) {
+            alert("Please enter a valid email and a password of at least 4 characters.");
+            return;
+        }
+
+        localStorage.setItem("brightloopLoggedIn", "true");
+        localStorage.setItem("brightloopUserEmail", email);
+
+        showApp();
+        showPage("Dashboard");
+    });
+});
+// Dashboard search
+document.addEventListener("input", function (event) {
+    if (event.target.id !== "dashboardSearch") return;
+
+    const query = event.target.value.toLowerCase().trim();
+    const rows = document.querySelectorAll("main.main-content table tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(query)
+            ? ""
+            : "none";
+    });
+});

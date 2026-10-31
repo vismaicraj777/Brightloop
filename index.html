@@ -9,9 +9,36 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
+
 <body>
 
-    <div class="app-container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="logo">
+                <span class="logo-icon">✦</span>
+                brightloop
+            </div>
+
+            <h1>Welcome back!</h1>
+            <p>Log in to manage your subscriptions.</p>
+
+            <form id="loginForm">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email" required>
+
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+
+                <button type="submit">Log In</button>
+            </form>
+
+            <p class="login-note">Demo access: enter any valid email and password.</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+
 
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -56,7 +83,11 @@
 
                 <div class="search-box">
                     <span>⌕</span>
-                    <input type="text" placeholder="Search anything...">
+                    <input
+                        type="text"
+                        id="dashboardSearch"
+                        placeholder="Search customers, invoices, subscriptions..."
+                    >
                 </div>
 
                 <div class="user-section">
@@ -88,30 +119,29 @@
 
                 <div class="stat-card purple">
                     <p>Monthly Revenue</p>
-                    <h2>₹2,45,000</h2>
-                    <span>↑ 12.8% vs last month</span>
+                    <h2 id="dashboardMonthlyRevenue">₹0</h2>
+                    <span>Revenue collected this month</span>
                 </div>
 
                 <div class="stat-card green">
                     <p>Active Subscriptions</p>
-                    <h2>1,248</h2>
-                    <span>↑ 8.2% vs last month</span>
+                    <h2 id="dashboardActiveSubscriptions">0</h2>
+                    <span>Currently active subscriptions</span>
                 </div>
 
                 <div class="stat-card orange">
                     <p>Outstanding</p>
-                    <h2>₹32,500</h2>
-                    <span>12 invoices awaiting payment</span>
+                    <h2 id="dashboardOutstanding">₹0</h2>
+                    <span id="dashboardPendingInvoices">0 invoices awaiting payment</span>
                 </div>
 
                 <div class="stat-card pink">
                     <p>Overdue Invoices</p>
-                    <h2>18</h2>
-                    <span>↓ 2.4% vs last month</span>
+                    <h2 id="dashboardOverdueInvoices">0</h2>
+                    <span>Invoices past their due date</span>
                 </div>
 
             </section>
-
 
             <!-- Dashboard Content -->
             <section class="dashboard-content">
@@ -120,9 +150,7 @@
                     <h3>Revenue Overview</h3>
                     <p class="subtitle">Your revenue performance over time</p>
 
-                    <div class="chart-placeholder">
-                        Revenue chart will appear here
-                    </div>
+                    <div id="dashboardRevenueChart" class="dashboard-revenue-chart"></div>
                 </div>
 
                 <div class="content-card">
