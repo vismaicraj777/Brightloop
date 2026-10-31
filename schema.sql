@@ -48,17 +48,11 @@ CREATE TABLE subscriptions (
     customer_id INT NOT NULL,
     plan_id INT NOT NULL,
     start_date DATE NOT NULL,
-    expiry_date DATE,
-    status ENUM(
-        'draft', 'quotation', 'confirmed',
-        'active', 'closed'
-    ) DEFAULT 'draft',
-
-    FOREIGN KEY (customer_id)
-        REFERENCES users(user_id),
-
-    FOREIGN KEY (plan_id)
-        REFERENCES plans(plan_id)
+    expiry_date DATE,closed_at DATE,
+    status ENUM('draft','quotation','confirmed','active','paused','closed') DEFAULT 'draft',
+    FOREIGN KEY (customer_id) REFERENCES users(user_id),
+    FOREIGN KEY (plan_id) REFERENCES plans(plan_id)
+);
 );
 
 -- 5. Invoices
@@ -103,7 +97,8 @@ CREATE TABLE subscription_items (
 
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
-);CREATE TABLE invoice_items (
+);
+CREATE TABLE invoice_items (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
     invoice_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -120,3 +115,30 @@ CREATE TABLE subscription_items (
     FOREIGN KEY (product_id)
         REFERENCES products(product_id)
 );
+CREATE TABLE product_variants (
+    variant_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    variant_name VARCHAR(100) NOT NULL,
+    additional_price DECIMAL(10,2) DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
