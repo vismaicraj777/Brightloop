@@ -165,6 +165,10 @@ function showPage(pageName) {
         showDiscountsPage();
         return;
     }
+    if (pageName === "Reports") {
+        showReportsPage();
+        return;
+    }
     
     showPlaceholderPage(pageName);
 }
@@ -222,6 +226,53 @@ function showCustomersPage() {
 
         <footer>© 2026 Brightloop Software</footer>
     `;
+    const chartContainer = document.getElementById("monthlyRevenueChart");
+
+    const monthlyRevenue = {};
+
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        monthlyRevenue[key] = {
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            amount: 0
+        };
+    }
+
+    invoices.forEach(invoice => {
+        if (!invoice.issueDate) return;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        if (monthlyRevenue[key]) {
+            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+        }
+    });
+
+    const maxRevenue = Math.max(
+        1,
+        ...Object.values(monthlyRevenue).map(item => item.amount)
+    );
+
+    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+        const height = (item.amount / maxRevenue) * 100;
+
+        return `
+            <div class="revenue-bar-item">
+                <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
+                <div class="revenue-bar-track">
+                    <div class="revenue-bar-fill" style="height: ${height}%"></div>
+                </div>
+                <span>${item.label}</span>
+            </div>
+        `;
+    }).join("");
 
     renderCustomers();
 
@@ -3119,3 +3170,160 @@ const savedPage = localStorage.getItem("brightloopCurrentPage") || "Dashboard";
 
 activateSidebarPage(savedPage);
 showPage(savedPage);
+
+/* ========================================
+   REPORTS & ANALYTICS
+======================================== */
+
+function showReportsPage() {
+
+    const totalRevenue = invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amountPaid || 0),
+        0
+    );
+
+    const outstandingAmount = invoices.reduce(
+        (sum, invoice) =>
+            sum + Math.max(
+                0,
+                Number(invoice.amount || 0) -
+                Number(invoice.amountPaid || 0)
+            ),
+        0
+    );
+
+    const activeSubscriptions = subscriptions.filter(
+        subscription =>
+            ["Active", "Confirmed"].includes(subscription.status)
+    ).length;
+
+    const totalInvoices = invoices.length;
+
+    mainContent.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1>Reports & Analytics</h1>
+                <p>Track your business performance and financial activity.</p>
+            </div>
+        </div>
+
+        <div class="reports-grid">
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">💰</div>
+                <p>Total Revenue Collected</p>
+                <h2>${formatPrice(totalRevenue)}</h2>
+                <small>Payments received from invoices</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">📊</div>
+                <p>Outstanding Payments</p>
+                <h2>${formatPrice(outstandingAmount)}</h2>
+                <small>Amount yet to be collected</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">🔄</div>
+                <p>Active Subscriptions</p>
+                <h2>${activeSubscriptions}</h2>
+                <small>Confirmed and active subscriptions</small>
+            </div>
+
+            <div class="report-stat-card">
+                <div class="report-stat-icon">🧾</div>
+                <p>Total Invoices</p>
+                <h2>${totalInvoices}</h2>
+                <small>Invoices generated</small>
+            </div>
+
+        </div>
+
+        <div class="content-card revenue-chart-card">
+            <div class="card-header">
+                <h2>Monthly Revenue</h2>
+                <span>Payments collected over the last 6 months</span>
+            </div>
+
+            <div id="monthlyRevenueChart" class="monthly-revenue-chart"></div>
+        </div>
+        <div class="content-card reports-overview">
+            <div class="card-header">
+                <h2>Business Overview</h2>
+            </div>
+
+            <div class="reports-overview-content">
+                <p>
+                    <strong>${invoices.filter(i => i.status === "Paid").length}</strong>
+                    Fully Paid Invoices
+                </p>
+
+                <p>
+                    <strong>${invoices.filter(i =>
+                        ["Confirmed", "Partially Paid"].includes(i.status)
+                    ).length}</strong>
+                    Pending Invoices
+                </p>
+
+                <p>
+                    <strong>${subscriptions.length}</strong>
+                    Total Subscriptions
+                </p>
+
+                <p>
+                    <strong>${customers.length}</strong>
+                    Total Customers
+                </p>
+            </div>
+        </div>
+        `;
+
+        // Generate Monthly Revenue Chart
+        const chartContainer = document.getElementById("monthlyRevenueChart");
+
+        const monthlyRevenue = {};
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(1);
+            date.setMonth(date.getMonth() - i);
+
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            monthlyRevenue[key] = {
+                label: date.toLocaleString("en-IN", { month: "short" }),
+                amount: 0
+            };
+        }
+
+        invoices.forEach(invoice => {
+            if (!invoice.issueDate) return;
+
+            const date = new Date(invoice.issueDate + "T00:00:00");
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+            if (monthlyRevenue[key]) {
+                monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+            }
+        });
+
+        const maxRevenue = Math.max(
+            1,
+            ...Object.values(monthlyRevenue).map(item => item.amount)
+        );
+
+        chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+            const height = (item.amount / maxRevenue) * 100;
+
+            return `
+                <div class="revenue-bar-item">
+                    <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
+                    <div class="revenue-bar-track">
+                        <div class="revenue-bar-fill" style="height: ${height}%"></div>
+                    </div>
+                    <span>${item.label}</span>
+                </div>
+            `;
+        }).join("");
+    }

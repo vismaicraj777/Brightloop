@@ -1179,3 +1179,140 @@ button {
 #paymentModal .modal-actions {
     margin-top: 12px;
 }
+
+/* ========================================
+   REPORTS & ANALYTICS STYLING
+======================================== */
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin: 24px 0;
+}
+
+.report-stat-card {
+    background: #FFFFFF;
+    border: 1px solid #EEEAF5;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 3px 12px rgba(40, 36, 61, 0.04);
+}
+
+.report-stat-icon {
+    font-size: 25px;
+    margin-bottom: 14px;
+}
+
+.report-stat-card p {
+    color: #777187;
+    font-size: 13px;
+    margin: 0 0 10px;
+}
+
+.report-stat-card h2 {
+    color: #30274D;
+    font-size: 23px;
+    margin: 0 0 8px;
+}
+
+.report-stat-card small {
+    color: #9690A5;
+    font-size: 11px;
+}
+
+.reports-overview {
+    margin-top: 22px;
+}
+
+.reports-overview-content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    padding: 20px 0;
+}
+
+.reports-overview-content p {
+    background: #F8F6FC;
+    padding: 17px;
+    border-radius: 10px;
+    color: #777187;
+    font-size: 13px;
+    margin: 0;
+}
+
+.reports-overview-content strong {
+    display: block;
+    color: #7655D9;
+    font-size: 23px;
+    margin-bottom: 5px;
+}
+
+@media (max-width: 900px) {
+    .reports-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 550px) {
+    .reports-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-overview-content {
+        grid-template-columns: 1fr;
+    }
+}
+/* Monthly Revenue Chart */
+
+.revenue-chart-card {
+    margin-top: 22px;
+    padding: 22px;
+}
+
+.monthly-revenue-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 15px;
+    height: 230px;
+    padding-top: 20px;
+}
+
+.revenue-bar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 8px;
+}
+
+.revenue-bar-value {
+    font-size: 10px;
+    color: #777187;
+}
+
+.revenue-bar-track {
+    height: 150px;
+    width: 100%;
+    max-width: 45px;
+    background: #F0EAFF;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.revenue-bar-fill {
+    width: 100%;
+    min-height: 0;
+    background: #7655D9;
+    border-radius: 8px;
+}
+
+.revenue-bar-item span {
+    font-size: 12px;
+    color: #777187;
+}
