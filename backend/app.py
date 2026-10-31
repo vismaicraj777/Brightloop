@@ -676,6 +676,172 @@ def renew_subscription(subscription_id):
     finally:
         cursor.close()
         conn.close()
+@app.route("/api/subscriptions/<int:subscription_id>/early-close", methods=["PUT"])
+def early_close_subscription(subscription_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
+    try:
+        cursor.execute(
+            "SELECT status FROM subscriptions WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        subscription = cursor.fetchone()
+
+        if not subscription:
+            return jsonify({"error": "Subscription not found"}), 404
+
+        if subscription["status"] != "active":
+            return jsonify({"error": "Only active subscriptions can be closed early"}), 400
+
+        cursor.execute(
+            """
+            UPDATE subscriptions
+            SET status = 'closed', closed_at = %s
+            WHERE subscription_id = %s
+            """,
+            (date.today(), subscription_id)
+        )
+        conn.commit()
+
+        return jsonify({
+            "message": "Subscription closed early successfully",
+            "subscription_id": subscription_id,
+            "closed_at": str(date.today()),
+            "status": "closed"
+        }), 200
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Early closure failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/variants", methods=["POST"])
+def add_variant():
+    data = request.get_json() or {}
+
+    product_id = data.get("product_id")
+    variant_name = data.get("variant_name")
+    additional_price = data.get("additional_price", 0)
+
+    if not product_id or not variant_name:
+        return jsonify({"error": "Product ID and variant name are required"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT product_id FROM products WHERE product_id = %s",
+            (product_id,)
+        )
+
+        if not cursor.fetchone():
+            return jsonify({"error": "Product not found"}), 404
+
+        cursor.execute(
+            """
+            INSERT INTO product_variants
+            (product_id, variant_name, additional_price)
+            VALUES (%s, %s, %s)
+            """,
+            (product_id, variant_name, additional_price)
+        )
+
+        conn.commit()
+
+        return jsonify({
+            "message": "Variant added successfully",
+            "variant_id": cursor.lastrowid
+        }), 201
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Could not add variant"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/variants/<int:product_id>", methods=["GET"])
+def get_variants(product_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT variant_id, product_id, variant_name, additional_price
+            FROM product_variants
+            WHERE product_id = %s
+            """,
+            (product_id,)
+        )
+
+        variants = cursor.fetchall()
+
+        return jsonify(variants), 200
+
+    except Exception:
+        return jsonify({"error": "Could not retrieve variants"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/customers", methods=["GET"])
+def get_customers():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT user_id, name, email
+            FROM users
+            WHERE role = 'customer'
+        """)
+        customers = cursor.fetchall()
+        return jsonify(customers), 200
+
+    except Exception:
+        return jsonify({"error": "Could not retrieve customers"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/subscriptions/auto-close", methods=["POST"])
+def auto_close_subscriptions():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            UPDATE subscriptions s
+            JOIN plans p ON s.plan_id = p.plan_id
+            SET
+                s.status = 'closed',
+                s.closed_at = CURDATE()
+            WHERE
+                s.status = 'active'
+                AND s.expiry_date IS NOT NULL
+                AND s.expiry_date <= CURDATE()
+                AND p.auto_close = TRUE
+        """)
+
+        closed_count = cursor.rowcount
+        conn.commit()
+
+        return jsonify({
+            "message": "Auto-close completed",
+            "subscriptions_closed": closed_count
+        }), 200
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Auto-close failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 if __name__ == "__main__":
     app.run(debug=True)
