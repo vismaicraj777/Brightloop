@@ -1,718 +1,611 @@
 #include <iostream>
 #include <string>
+#include <unordered_map>
+#include <algorithm>
 #include <cctype>
 #include <random>
-#include <ctime>
-#include <limits>
 #include <chrono>
+#include <limits>
+#include <sstream>
 
 using namespace std;
+using Clock = chrono::steady_clock;
 
-// ================= USER STRUCTURE =================
+const size_t MAX_USERS = 100;
+const int MAX_LOGIN_ATTEMPTS = 3;
+const int LOCK_SECONDS = 60;
+const int OTP_EXPIRY_SECONDS = 300;
+const int MAX_OTP_ATTEMPTS = 3;
 
-struct user
-{
+struct User {
     string name;
     string email;
     string password;
     string role;
-    bool isActive;
-
+    bool active = true;
     int failedLoginAttempts = 0;
-    chrono::steady_clock::time_point lockedUntil{};
+    Clock::time_point lockedUntil{};
 };
 
-// ================= TEMPORARY STORAGE =================
-
-const int MAX_USERS = 100;
-user users[MAX_USERS];
-int userCount = 0;
-
-// OTP information
-struct OTPData
-{
-    int code;
-    int userIndex;
-    int attempts;
-    chrono::steady_clock::time_point expiry;
-    bool active;
+struct Session {
+    bool authenticated = false;
+    string email;
+    string role;
 };
 
-OTPData currentOTP = {0, -1, 0, {}, false};
+struct OTPData {
+    string code;
+    Clock::time_point expiresAt;
+    int attempts = 0;
+};
 
-// ================= INPUT FUNCTIONS =================
+unordered_map<string, OTPData> otpByEmail;
+User users[MAX_USERS];
+size_t userCount = 0;
 
-// Read a complete line, including spaces
-string readText(string message)
-{
-    string value;
-
-    cout << message;
-    getline(cin, value);
-
-    return value;
+string trim(const string& value) {
+    size_t first = value.find_first_not_of(" \t\r\n");
+    if (first == string::npos) return "";
+    size_t last = value.find_last_not_of(" \t\r\n");
+    return value.substr(first, last - first + 1);
 }
 
-// Read an integer safely
-int readChoice(string message)
-{
-    int choice;
-
-    while (true)
-    {
-        cout << message;
-
-        if (cin >> choice)
-        {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            return choice;
-        }
-
-        cout << "Please enter a valid number!\n";
-
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+bool readLine(const string& prompt, string& result) {
+    cout << prompt;
+    if (!getline(cin, result)) {
+        cout << "\nInput ended. Exiting safely.\n";
+        return false;
     }
-}
-
-// ================= OTP GENERATION =================
-
-int generateOTP()
-{
-    static random_device rd;
-    static mt19937 generator(rd());
-
-    uniform_int_distribution<int> distribution(100000, 999999);
-
-    return distribution(generator);
-}
-
-// ================= EMAIL VALIDATION =================
-
-bool checkEmail(string email)
-{
-    size_t atPosition = email.find('@');
-
-    if (atPosition == string::npos)
-        return false;
-
-    if (atPosition == 0)
-        return false;
-
-    if (email.find('@', atPosition + 1) != string::npos)
-        return false;
-
-    size_t dotPosition = email.find('.', atPosition + 1);
-
-    if (dotPosition == string::npos)
-        return false;
-
-    if (dotPosition == atPosition + 1)
-        return false;
-
-    if (dotPosition == email.length() - 1)
-        return false;
-
-    if (email.find(' ') != string::npos)
-        return false;
-
-    if (email.find("..") != string::npos)
-        return false;
-
+    result = trim(result);
     return true;
 }
 
-// ================= PASSWORD VALIDATION =================
+bool readMenuChoice(const string& prompt, int& choice) {
+    while (true) {
+        string line;
+        if (!readLine(prompt, line)) return false;
 
-bool checkPassword(string password)
-{
-    bool upper = false;
-    bool lower = false;
-    bool special = false;
-
-    for (char ch : password)
-    {
-        unsigned char c = static_cast<unsigned char>(ch);
-
-        if (isupper(c))
-            upper = true;
-
-        if (islower(c))
-            lower = true;
-
-        if (ispunct(c))
-            special = true;
+        stringstream ss(line);
+        char extra;
+        if ((ss >> choice) && !(ss >> extra) && choice >= 0) return true;
+        cout << "Enter a valid non-negative whole number.\n";
     }
-
-    return password.length() > 8 &&
-           upper && lower && special;
 }
 
-// ================= DUPLICATE EMAIL CHECK =================
-
-bool emailExists(string email)
-{
-    for (int i = 0; i < userCount; i++)
-    {
-        if (users[i].email == email)
-            return true;
-    }
-
-    return false;
+string normalizeEmail(string email) {
+    transform(email.begin(), email.end(), email.begin(),
+              [](unsigned char ch) { return static_cast<char>(tolower(ch)); });
+    return email;
 }
 
-// ================= COLLECT USER DETAILS =================
+bool validEmail(const string& email) {
+    if (email.empty() || email.find_first_of(" \t\r\n") != string::npos) return false;
 
-bool collectUserDetails(user &newUser)
-{
-    newUser.name = readText("Enter full name: ");
+    size_t at = email.find('@');
+    if (at == string::npos || at == 0 || at != email.rfind('@')) return false;
 
-    if (newUser.name.empty())
-    {
-        cout << "Name cannot be empty!\n";
-        return false;
-    }
-
-    bool emailValid = false;
-
-    do
-    {
-        newUser.email = readText("Enter email: ");
-
-        if (!checkEmail(newUser.email))
-        {
-            cout << "Invalid email format!\n";
-        }
-        else if (emailExists(newUser.email))
-        {
-            cout << "Email already registered!\n";
-        }
-        else
-        {
-            emailValid = true;
-            cout << "Email accepted!\n";
-        }
-
-    } while (!emailValid);
-
-    bool passwordValid = false;
-
-    do
-    {
-        newUser.password = readText("Create password: ");
-
-        if (checkPassword(newUser.password))
-        {
-            passwordValid = true;
-            cout << "Password accepted!\n";
-        }
-        else
-        {
-            cout << "\nInvalid password!\n";
-            cout << "Requirements:\n";
-            cout << "- More than 8 characters\n";
-            cout << "- One uppercase letter\n";
-            cout << "- One lowercase letter\n";
-            cout << "- One special character\n";
-        }
-
-    } while (!passwordValid);
-
+    size_t dot = email.find('.', at + 2);
+    if (dot == string::npos || dot == email.size() - 1) return false;
+    if (email[at + 1] == '.' || email.back() == '.') return false;
+    if (email.find("..") != string::npos) return false;
     return true;
 }
 
-// ================= CUSTOMER REGISTRATION =================
-
-void registerUser()
-{
-    if (userCount >= MAX_USERS)
-    {
-        cout << "User storage is full!\n";
-        return;
-    }
-
-    user newUser;
-
-    cout << "\n===== CUSTOMER REGISTRATION =====\n";
-
-    if (!collectUserDetails(newUser))
-        return;
-
-    newUser.role = "Customer";
-    newUser.isActive = true;
-    newUser.failedLoginAttempts = 0;
-
-    users[userCount] = newUser;
-    userCount++;
-
-    cout << "\nRegistration successful!\n";
-    cout << "Welcome, " << newUser.name << "!\n";
+bool validName(const string& name) {
+    return !name.empty() && any_of(name.begin(), name.end(),
+        [](unsigned char ch) { return !isspace(ch); });
 }
 
-// ================= LOGIN =================
+bool validPassword(const string& password) {
+    if (password.length() < 8) return false;
 
-// One login attempt per function call.
-// Failed attempts are retained in the user record.
-int loginUser()
-{
-    cout << "\n===== LOGIN =====\n";
+    bool upper = false, lower = false, digit = false, special = false;
 
-    string email = readText("Enter email: ");
-
-    int index = -1;
-
-    for (int i = 0; i < userCount; i++)
-    {
-        if (users[i].email == email)
-        {
-            index = i;
-            break;
-        }
+    for (unsigned char ch : password) {
+        if (isupper(ch)) upper = true;
+        else if (islower(ch)) lower = true;
+        else if (isdigit(ch)) digit = true;
+        else if (!isspace(ch)) special = true;
     }
 
-    if (index == -1)
-    {
-        cout << "Invalid email or password!\n";
-        return -1;
-    }
+    return upper && lower && digit && special;
+}
 
-    if (!users[index].isActive)
-    {
-        cout << "This account is inactive!\n";
-        return -1;
-    }
+int findUserByEmail(const string& email) {
+    const string target = normalizeEmail(email);
 
-    auto now = chrono::steady_clock::now();
-
-    if (now < users[index].lockedUntil)
-    {
-        auto remaining = chrono::duration_cast<chrono::seconds>(
-            users[index].lockedUntil - now
-        ).count();
-
-        cout << "Account temporarily locked.\n";
-        cout << "Try again in " << remaining << " seconds.\n";
-
-        return -1;
-    }
-
-    string password = readText("Enter password: ");
-
-    if (users[index].password == password)
-    {
-        users[index].failedLoginAttempts = 0;
-
-        cout << "\nLogin successful!\n";
-        cout << "Welcome back, " << users[index].name << "!\n";
-        cout << "Role: " << users[index].role << "\n";
-
-        return index;
-    }
-
-    users[index].failedLoginAttempts++;
-
-    cout << "\nInvalid email or password!\n";
-
-    if (users[index].failedLoginAttempts >= 3)
-    {
-        users[index].lockedUntil =
-            chrono::steady_clock::now() + chrono::seconds(60);
-
-        users[index].failedLoginAttempts = 0;
-
-        cout << "Too many failed attempts!\n";
-        cout << "Account locked for 60 seconds.\n";
-    }
-    else
-    {
-        cout << "Attempts remaining: "
-             << 3 - users[index].failedLoginAttempts << "\n";
+    for (size_t i = 0; i < userCount; ++i) {
+        if (normalizeEmail(users[i].email) == target)
+            return static_cast<int>(i);
     }
 
     return -1;
 }
 
-// ================= ADMIN AUTHORIZATION =================
+string generateOTP() {
+    static random_device rd;
+    static mt19937 gen(rd());
+    uniform_int_distribution<int> dist(0, 999999);
 
-// Admin access is checked inside this function.
-void createStaff(int adminIndex)
-{
-    if (adminIndex < 0 || adminIndex >= userCount ||
-        users[adminIndex].role != "Admin" ||
-        !users[adminIndex].isActive)
-    {
-        cout << "Access denied! Admin authorization required.\n";
-        return;
-    }
+    int value = dist(gen);
+    string code = to_string(value);
 
-    if (userCount >= MAX_USERS)
-    {
-        cout << "User storage is full!\n";
-        return;
-    }
-
-    user newStaff;
-
-    cout << "\n===== CREATE STAFF ACCOUNT =====\n";
-
-    if (!collectUserDetails(newStaff))
-        return;
-
-    newStaff.role = "Staff";
-    newStaff.isActive = true;
-    newStaff.failedLoginAttempts = 0;
-
-    users[userCount] = newStaff;
-    userCount++;
-
-    cout << "\nStaff account created successfully!\n";
+    return string(6 - code.length(), '0') + code;
 }
 
-// ================= VIEW USERS =================
+bool readSixDigitOTP(string& code) {
+    while (true) {
+        if (!readLine("Enter the 6-digit OTP: ", code)) return false;
 
-void viewUsers()
-{
-    cout << "\n===== REGISTERED USERS =====\n";
+        if (code.length() == 6 &&
+            all_of(code.begin(), code.end(),
+                   [](unsigned char ch) { return isdigit(ch); }))
+            return true;
 
-    for (int i = 0; i < userCount; i++)
-    {
-        cout << "\nName: " << users[i].name;
-        cout << "\nEmail: " << users[i].email;
-        cout << "\nRole: " << users[i].role;
-
-        cout << "\nStatus: "
-             << (users[i].isActive ? "Active" : "Inactive");
-
-        cout << "\n-------------------------\n";
+        cout << "OTP must contain exactly 6 digits.\n";
     }
 }
 
-// ================= SEARCH USER =================
+bool sendDemoOTP(const string& email) {
+    string code = generateOTP();
 
-void searchUser()
-{
-    string email = readText("Enter user email: ");
+    otpByEmail[email] = {
+        code,
+        Clock::now() + chrono::seconds(OTP_EXPIRY_SECONDS),
+        0
+    };
 
-    for (int i = 0; i < userCount; i++)
-    {
-        if (users[i].email == email)
-        {
-            cout << "\nUser found!\n";
-            cout << "Name: " << users[i].name << "\n";
-            cout << "Email: " << users[i].email << "\n";
-            cout << "Role: " << users[i].role << "\n";
-            cout << "Status: "
-                 << (users[i].isActive ? "Active" : "Inactive")
-                 << "\n";
+    cout << "\n[DEMO ONLY] OTP for " << email << " is: " << code << "\n";
+    cout << "It expires in 5 minutes.\n";
 
-            return;
-        }
-    }
-
-    cout << "User not found!\n";
+    return true;
 }
 
-// ================= ACCOUNT MANAGEMENT =================
+bool verifyOTP(const string& email) {
+    auto it = otpByEmail.find(email);
 
-void manageAccount(int adminIndex)
-{
-    if (adminIndex < 0 || adminIndex >= userCount ||
-        users[adminIndex].role != "Admin" ||
-        !users[adminIndex].isActive)
-    {
-        cout << "Access denied!\n";
-        return;
+    if (it == otpByEmail.end()) {
+        cout << "No active OTP. Request a new one.\n";
+        return false;
     }
 
-    string email = readText("Enter user email: ");
-
-    for (int i = 0; i < userCount; i++)
-    {
-        if (users[i].email == email)
-        {
-            if (users[i].role == "Admin")
-            {
-                cout << "Admin account cannot be changed here.\n";
-                return;
-            }
-
-            cout << "\nName: " << users[i].name;
-            cout << "\nCurrent status: "
-                 << (users[i].isActive ? "Active" : "Inactive");
-
-            cout << "\n1. Activate account";
-            cout << "\n2. Deactivate account\n";
-
-            int choice = readChoice("Enter choice: ");
-
-            if (choice == 1)
-            {
-                users[i].isActive = true;
-                cout << "Account activated!\n";
-            }
-            else if (choice == 2)
-            {
-                users[i].isActive = false;
-                cout << "Account deactivated!\n";
-            }
-            else
-            {
-                cout << "Invalid choice!\n";
-            }
-
-            return;
+    while (it->second.attempts < MAX_OTP_ATTEMPTS) {
+        if (Clock::now() > it->second.expiresAt) {
+            cout << "OTP expired. Request a new one.\n";
+            otpByEmail.erase(it);
+            return false;
         }
+
+        string entered;
+
+        if (!readSixDigitOTP(entered)) return false;
+
+        if (entered == it->second.code) {
+            otpByEmail.erase(it);
+            cout << "OTP verified.\n";
+            return true;
+        }
+
+        ++it->second.attempts;
+
+        cout << "Incorrect OTP. Attempts left: "
+             << MAX_OTP_ATTEMPTS - it->second.attempts << "\n";
     }
 
-    cout << "User not found!\n";
+    otpByEmail.erase(it);
+    cout << "Too many incorrect OTP attempts. Request a new OTP.\n";
+
+    return false;
 }
 
-// ================= OTP SENDING (DEMO) =================
+bool registerCustomer() {
+    if (userCount >= MAX_USERS) {
+        cout << "User capacity reached.\n";
+        return false;
+    }
 
-// Replace this function with a real email provider integration later.
-void sendOTP(int otp, string email)
-{
-    cout << "\n[DEMO ONLY] OTP for " << email
-         << " is: " << otp << "\n";
+    string name, email, password;
 
-    cout << "This OTP is not being emailed.\n";
+    if (!readLine("Full name: ", name)) return false;
+
+    if (!validName(name)) {
+        cout << "Name cannot be empty or whitespace only.\n";
+        return false;
+    }
+
+    if (!readLine("Email: ", email)) return false;
+
+    email = normalizeEmail(email);
+
+    if (!validEmail(email)) {
+        cout << "Email format is invalid.\n";
+        return false;
+    }
+
+    if (findUserByEmail(email) != -1) {
+        cout << "An account with this email already exists.\n";
+        return false;
+    }
+
+    if (!readLine("Password (8+ chars, upper/lower/digit/special): ", password))
+        return false;
+
+    if (!validPassword(password)) {
+        cout << "Password does not meet the requirements.\n";
+        return false;
+    }
+
+    users[userCount++] = {
+        name, email, password, "Customer", true, 0, {}
+    };
+
+    cout << "Customer account created. You can now log in.\n";
+
+    return true;
 }
 
-// ================= PASSWORD RESET =================
+bool isLocked(const User& user) {
+    return Clock::now() < user.lockedUntil;
+}
 
-void resetPassword()
-{
-    cout << "\n===== PASSWORD RESET =====\n";
+Session login() {
+    Session session;
 
-    string email = readText("Enter registered email: ");
+    string email, password;
 
-    int index = -1;
+    if (!readLine("Email: ", email)) return session;
 
-    for (int i = 0; i < userCount; i++)
-    {
-        if (users[i].email == email)
-        {
-            index = i;
-            break;
-        }
+    email = normalizeEmail(email);
+
+    if (!readLine("Password: ", password)) return session;
+
+    int index = findUserByEmail(email);
+
+    if (index == -1) {
+        cout << "Invalid email or password.\n";
+        return session;
     }
 
-    if (index == -1)
-    {
-        cout << "Email not found!\n";
+    User& user = users[index];
+
+    if (!user.active) {
+        cout << "This account is inactive.\n";
+        return session;
+    }
+
+    if (isLocked(user)) {
+        auto remaining = chrono::duration_cast<chrono::seconds>(
+            user.lockedUntil - Clock::now()).count();
+
+        cout << "Account temporarily locked. Try again in "
+             << max(0L, remaining) << " seconds.\n";
+
+        return session;
+    }
+
+    if (password != user.password) {
+        ++user.failedLoginAttempts;
+
+        cout << "Invalid email or password.\n";
+
+        if (user.failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+            user.lockedUntil =
+                Clock::now() + chrono::seconds(LOCK_SECONDS);
+
+            user.failedLoginAttempts = 0;
+
+            cout << "Too many failures. Account locked for 60 seconds.\n";
+        }
+
+        return session;
+    }
+
+    user.failedLoginAttempts = 0;
+    user.lockedUntil = {};
+
+    session = {true, user.email, user.role};
+
+    cout << "Login successful. Role: " << session.role << "\n";
+
+    return session;
+}
+
+bool isAdminSession(const Session& session) {
+    if (!session.authenticated || session.role != "Admin") {
+        cout << "Access denied. Admin login required.\n";
+        return false;
+    }
+
+    int index = findUserByEmail(session.email);
+
+    if (index == -1 ||
+        !users[index].active ||
+        users[index].role != "Admin") {
+
+        cout << "Access denied. Admin account is unavailable.\n";
+        return false;
+    }
+
+    return true;
+}
+
+void viewUsers(const Session& session) {
+    if (!isAdminSession(session)) return;
+
+    cout << "\n--- USER LIST ---\n";
+
+    for (size_t i = 0; i < userCount; ++i) {
+        cout << users[i].name << " | "
+             << users[i].email << " | "
+             << users[i].role << " | "
+             << (users[i].active ? "Active" : "Inactive")
+             << "\n";
+    }
+}
+
+void searchUser(const Session& session) {
+    if (!isAdminSession(session)) return;
+
+    string email;
+
+    if (!readLine("Email to search: ", email)) return;
+
+    int index = findUserByEmail(email);
+
+    if (index == -1) {
+        cout << "User not found.\n";
         return;
     }
 
-    if (!users[index].isActive)
-    {
-        cout << "This account is inactive!\n";
+    const User& user = users[index];
+
+    cout << "Name: " << user.name
+         << "\nEmail: " << user.email
+         << "\nRole: " << user.role
+         << "\nStatus: "
+         << (user.active ? "Active" : "Inactive") << "\n";
+}
+
+void createStaff(const Session& session) {
+    if (!isAdminSession(session)) return;
+
+    if (userCount >= MAX_USERS) {
+        cout << "User capacity reached.\n";
         return;
     }
 
-    currentOTP.code = generateOTP();
-    currentOTP.userIndex = index;
-    currentOTP.attempts = 0;
-    currentOTP.expiry =
-        chrono::steady_clock::now() + chrono::minutes(5);
-    currentOTP.active = true;
+    string name, email, password;
 
-    sendOTP(currentOTP.code, email);
+    if (!readLine("Staff name: ", name)) return;
 
-    int enteredOTP;
-
-    while (currentOTP.attempts < 3)
-    {
-        if (chrono::steady_clock::now() >= currentOTP.expiry)
-        {
-            cout << "OTP expired! Request a new OTP.\n";
-            currentOTP.active = false;
-            return;
-        }
-
-        int value = readChoice("Enter OTP: ");
-
-        enteredOTP = value;
-
-        if (enteredOTP == currentOTP.code &&
-            currentOTP.userIndex == index)
-        {
-            cout << "\nOTP verified successfully!\n";
-            currentOTP.active = false;
-            break;
-        }
-
-        currentOTP.attempts++;
-
-        cout << "Incorrect OTP!\n";
-
-        if (currentOTP.attempts < 3)
-        {
-            cout << "Attempts remaining: "
-                 << 3 - currentOTP.attempts << "\n";
-        }
-    }
-
-    if (currentOTP.active)
-    {
-        cout << "Maximum OTP attempts reached!\n";
-        currentOTP.active = false;
+    if (!validName(name)) {
+        cout << "Name cannot be empty or whitespace only.\n";
         return;
     }
+
+    if (!readLine("Staff email: ", email)) return;
+
+    email = normalizeEmail(email);
+
+    if (!validEmail(email)) {
+        cout << "Email format is invalid.\n";
+        return;
+    }
+
+    if (findUserByEmail(email) != -1) {
+        cout << "Email already exists.\n";
+        return;
+    }
+
+    if (!readLine("Temporary password (8+ chars, upper/lower/digit/special): ",
+                  password))
+        return;
+
+    if (!validPassword(password)) {
+        cout << "Password does not meet the requirements.\n";
+        return;
+    }
+
+    users[userCount++] = {
+        name, email, password, "Staff", true, 0, {}
+    };
+
+    cout << "Staff account created.\n";
+}
+
+void resetPassword() {
+    string email;
+
+    if (!readLine("Account email: ", email)) return;
+
+    email = normalizeEmail(email);
+
+    int index = findUserByEmail(email);
+
+    if (index == -1 || !users[index].active) {
+        cout << "If the account exists, reset instructions would be sent.\n";
+        return;
+    }
+
+    sendDemoOTP(email);
+
+    if (!verifyOTP(email)) return;
 
     string newPassword;
 
-    while (true)
-    {
-        newPassword = readText("Enter new password: ");
+    if (!readLine("New password: ", newPassword)) return;
 
-        if (!checkPassword(newPassword))
-        {
-            cout << "Password does not meet requirements!\n";
-        }
-        else if (newPassword == users[index].password)
-        {
-            cout << "You cannot reuse your current password!\n";
-        }
-        else
-        {
-            break;
-        }
+    if (!validPassword(newPassword)) {
+        cout << "Password does not meet the requirements.\n";
+        return;
+    }
+
+    if (newPassword == users[index].password) {
+        cout << "Choose a password different from the current password.\n";
+        return;
     }
 
     users[index].password = newPassword;
+    users[index].failedLoginAttempts = 0;
+    users[index].lockedUntil = {};
 
-    cout << "\nPassword updated successfully!\n";
+    cout << "Password updated.\n";
 }
 
-// ================= ADMIN MENU =================
-
-void adminMenu(int adminIndex)
-{
+void adminMenu(const Session& session) {
     int choice;
 
-    do
-    {
-        cout << "\n===== ADMIN MENU =====\n";
-        cout << "1. Create Staff Account\n";
-        cout << "2. View All Users\n";
-        cout << "3. Search User\n";
-        cout << "4. Manage User Account\n";
-        cout << "5. Logout\n";
+    do {
+        cout << "\n--- ADMIN MENU ---\n"
+             << "1. View users\n"
+             << "2. Search user\n"
+             << "3. Create staff\n"
+             << "0. Logout\n";
 
-        choice = readChoice("Enter choice: ");
+        if (!readMenuChoice("Choice: ", choice)) return;
 
-        switch (choice)
-        {
+        switch (choice) {
             case 1:
-                createStaff(adminIndex);
+                viewUsers(session);
                 break;
 
             case 2:
-                viewUsers();
+                searchUser(session);
                 break;
 
             case 3:
-                searchUser();
+                createStaff(session);
                 break;
 
-            case 4:
-                manageAccount(adminIndex);
-                break;
-
-            case 5:
-                cout << "Admin logged out.\n";
+            case 0:
+                cout << "Logged out.\n";
                 break;
 
             default:
-                cout << "Invalid choice!\n";
+                cout << "Invalid choice.\n";
         }
 
-    } while (choice != 5);
+    } while (choice != 0);
 }
 
-// ================= STAFF MENU =================
-
-void staffMenu()
-{
-    cout << "\nStaff authenticated successfully.\n";
-    cout << "Staff dashboard will be handled by frontend.\n";
-}
-
-// ================= CUSTOMER MENU =================
-
-void customerMenu()
-{
-    cout << "\nCustomer authenticated successfully.\n";
-    cout << "Customer dashboard will be handled by frontend.\n";
-}
-
-// ================= MAIN =================
-
-int main()
-{
-    // Test Admin account
-    users[0].name = "Admin";
-    users[0].email = "admin@subscriptiq.com";
-    users[0].password = "Admin@12345";
-    users[0].role = "Admin";
-    users[0].isActive = true;
-
-    userCount = 1;
-
+void staffMenu(const Session& session) {
     int choice;
 
-    do
-    {
-        cout << "\n===== SUBSCRIPT IQ =====\n";
-        cout << "1. Register\n";
-        cout << "2. Login\n";
-        cout << "3. Forgot Password\n";
-        cout << "4. Exit\n";
+    do {
+        cout << "\n--- STAFF MENU ---\n"
+             << "1. View own account\n"
+             << "0. Logout\n";
 
-        choice = readChoice("Enter choice: ");
+        if (!readMenuChoice("Choice: ", choice)) return;
 
-        switch (choice)
-        {
-            case 1:
-                registerUser();
-                break;
+        if (choice == 1) {
+            int index = findUserByEmail(session.email);
 
-            case 2:
-            {
-                int index = loginUser();
-
-                if (index != -1)
-                {
-                    if (users[index].role == "Admin")
-                    {
-                        adminMenu(index);
-                    }
-                    else if (users[index].role == "Staff")
-                    {
-                        staffMenu();
-                    }
-                    else if (users[index].role == "Customer")
-                    {
-                        customerMenu();
-                    }
-                }
-
-                break;
+            if (index != -1 && users[index].active) {
+                cout << "Name: " << users[index].name
+                     << "\nEmail: " << users[index].email
+                     << "\nRole: Staff\n";
             }
 
-            case 3:
-                resetPassword();
-                break;
+        } else if (choice == 0) {
+            cout << "Logged out.\n";
 
-            case 4:
-                cout << "\nThank you for using SubscriptIQ!\n";
-                break;
-
-            default:
-                cout << "Invalid choice!\n";
+        } else {
+            cout << "Invalid choice.\n";
         }
 
-    } while (choice != 4);
+    } while (choice != 0);
+}
+
+void customerMenu(const Session& session) {
+    int choice;
+
+    do {
+        cout << "\n--- CUSTOMER MENU ---\n"
+             << "1. View own account\n"
+             << "0. Logout\n";
+
+        if (!readMenuChoice("Choice: ", choice)) return;
+
+        if (choice == 1) {
+            int index = findUserByEmail(session.email);
+
+            if (index != -1 && users[index].active) {
+                cout << "Name: " << users[index].name
+                     << "\nEmail: " << users[index].email
+                     << "\nRole: Customer\n";
+            }
+
+        } else if (choice == 0) {
+            cout << "Logged out.\n";
+
+        } else {
+            cout << "Invalid choice.\n";
+        }
+
+    } while (choice != 0);
+}
+
+int main() {
+    users[userCount++] = {
+        "SubscriptIQ Admin",
+        "admin@subscriptiq.com",
+        "Admin@12345",
+        "Admin",
+        true,
+        0,
+        {}
+    };
+
+    cout << "====================================\n"
+         << "       SUBSCRIPTIQ AUTH DEMO\n"
+         << "====================================\n"
+         << "Test admin email: admin@subscriptiq.com\n"
+         << "Test admin password: Admin@12345\n"
+         << "These credentials are hardcoded for demonstration only.\n";
+
+    while (true) {
+        int choice;
+
+        cout << "\n--- MAIN MENU ---\n"
+             << "1. Register as customer\n"
+             << "2. Login\n"
+             << "3. Reset password\n"
+             << "0. Exit\n";
+
+        if (!readMenuChoice("Choice: ", choice)) break;
+
+        if (choice == 0) {
+            cout << "Goodbye.\n";
+            break;
+
+        } else if (choice == 1) {
+            registerCustomer();
+
+        } else if (choice == 2) {
+            Session session = login();
+
+            if (session.authenticated) {
+                if (session.role == "Admin")
+                    adminMenu(session);
+
+                else if (session.role == "Staff")
+                    staffMenu(session);
+
+                else if (session.role == "Customer")
+                    customerMenu(session);
+
+                else
+                    cout << "Unknown role. Access denied.\n";
+            }
+
+        } else if (choice == 3) {
+            resetPassword();
+
+        } else {
+            cout << "Invalid choice.\n";
+        }
+    }
 
     return 0;
 }
