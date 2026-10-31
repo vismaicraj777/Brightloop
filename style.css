@@ -1,0 +1,650 @@
+
+/* ==============================
+   1. GLOBAL STYLING
+================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #F8F7FC;
+    color: #28243D;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+
+/* ==============================
+   2. SIDEBAR
+================================ */
+
+.sidebar {
+    width: 250px;
+    background: #FFFFFF;
+    border-right: 1px solid #EEEAF6;
+    padding: 28px 18px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.logo {
+    font-size: 23px;
+    font-weight: 750;
+    color: #30274D;
+    margin: 0 8px 45px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    background: linear-gradient(135deg, #A78BFA, #7655D9);
+    color: white;
+    width: 35px;
+    height: 35px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+}
+
+.menu-heading {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #A6A1B5;
+    font-weight: bold;
+    margin: 0 10px 15px;
+}
+
+nav {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+
+/* Keep all sidebar links consistent */
+.nav-link {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px 16px;
+    min-height: 46px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 10px;
+    text-decoration: none;
+}
+
+/* Settings link */
+.sidebar-bottom .nav-link {
+    width: 100%;
+    min-height: 46px;
+    padding: 13px 16px;
+    font-size: 14px;
+}
+
+
+.nav-link:hover {
+    background: #F5F1FF;
+    color: #7655D9;
+}
+
+.nav-link.active {
+    background: #F0EAFF;
+    color: #7655D9;
+    box-shadow: inset 3px 0 #8060DF;
+}
+
+.sidebar-bottom {
+    margin-top: auto;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid #EEEAF6;
+    padding: 20px 5px 0;
+    margin-top: 20px;
+}
+
+.avatar,
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #EDE5FF;
+    color: #7655D9;
+    display: grid;
+    place-items: center;
+    font-weight: bold;
+}
+
+.profile strong {
+    font-size: 12px;
+}
+
+.profile small {
+    display: block;
+    color: #A6A1B5;
+    font-size: 10px;
+    margin-top: 3px;
+}
+
+
+/* ==============================
+   3. MAIN CONTENT
+================================ */
+
+.main-content {
+    flex: 1;
+    padding: 0 35px 25px;
+    min-width: 0;
+}
+
+.topbar {
+    height: 82px;
+    border-bottom: 1px solid #EEEAF6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.search-box {
+    background: white;
+    border: 1px solid #EEEAF6;
+    padding: 11px 15px;
+    border-radius: 10px;
+    width: 350px;
+    display: flex;
+    gap: 10px;
+    color: #9992AC;
+}
+
+.search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 12px;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: #817B96;
+}
+
+.user-avatar {
+    background: #7655D9;
+    color: white;
+}
+
+
+/* ==============================
+   4. WELCOME SECTION
+================================ */
+
+.welcome-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 35px 0 25px;
+}
+
+.eyebrow {
+    color: #987CE0;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+
+.welcome-section h1 {
+    font-size: 25px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #9993AA;
+    font-size: 12px;
+}
+
+.date-button {
+    background: white;
+    border: 1px solid #EEEAF6;
+    padding: 11px 15px;
+    border-radius: 9px;
+    color: #6E6784;
+    cursor: pointer;
+}
+
+
+/* ==============================
+   5. STATISTICS CARDS
+================================ */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 17px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #EEEAF6;
+    border-radius: 14px;
+    padding: 20px;
+    transition: 0.25s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px #7655D911;
+}
+
+.stat-card p {
+    color: #89839B;
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.stat-card h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.stat-card span {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.purple span { color: #8060DF; }
+.green span { color: #29A781; }
+.orange span { color: #D99A4B; }
+.pink span { color: #D97791; }
+
+
+/* ==============================
+   6. DASHBOARD CONTENT
+================================ */
+
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.content-card {
+    background: white;
+    border: 1px solid #EEEAF6;
+    border-radius: 14px;
+    padding: 22px;
+    min-width: 0;
+}
+
+.content-card h3 {
+    font-size: 14px;
+    margin-bottom: 7px;
+}
+
+.chart-placeholder {
+    height: 190px;
+    margin-top: 22px;
+    background: linear-gradient(135deg, #F8F5FF, #FDFBFF);
+    border: 1px dashed #D9CFF4;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    color: #A398C5;
+    font-size: 12px;
+}
+
+.activity {
+    padding: 15px 0;
+    border-bottom: 1px solid #F1EEF6;
+}
+
+.activity:last-child {
+    border-bottom: none;
+}
+
+.activity strong {
+    font-size: 12px;
+}
+
+.activity p {
+    font-size: 11px;
+    color: #A29BAF;
+    margin-top: 5px;
+}
+
+
+/* ==============================
+   7. SUBSCRIPTIONS TABLE
+================================ */
+
+.subscriptions-section {
+    margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    text-align: left;
+    min-width: 580px;
+}
+
+th {
+    color: #A29BAF;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 13px 10px;
+    border-bottom: 1px solid #EEEAF6;
+}
+
+td {
+    padding: 16px 10px;
+    font-size: 11px;
+    color: #77718A;
+    border-bottom: 1px solid #F3F0F7;
+}
+
+.status {
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.active {
+    background: #E7F8F0;
+    color: #269B74;
+}
+
+.pending {
+    background: #FFF3E2;
+    color: #D39642;
+}
+
+
+/* ==============================
+   8. FOOTER
+================================ */
+
+footer {
+    padding: 15px 0;
+    color: #AAA4B8;
+    font-size: 11px;
+}
+
+
+/* ==============================
+   9. RESPONSIVE DESIGN
+================================ */
+
+@media (max-width: 1050px) {
+
+    .sidebar {
+        width: 210px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        padding: 0 20px 20px;
+    }
+}
+
+@media (max-width: 650px) {
+
+    .sidebar {
+        display: none;
+    }
+
+    .main-content {
+        padding: 0 14px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 14px;
+    }
+
+    .stat-card h2 {
+        font-size: 19px;
+    }
+
+    .welcome-section {
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .welcome-section h1 {
+        font-size: 19px;
+    }
+
+    .search-box {
+        width: 70%;
+    }
+
+    .date-button {
+        font-size: 10px;
+    }
+}
+
+/* ========================================
+   10. CUSTOMERS PAGE
+======================================== */
+
+.customers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 35px 0 25px;
+    gap: 15px;
+}
+
+.customers-header h1 {
+    font-size: 25px;
+    color: #28243D;
+}
+
+.customers-header p {
+    font-size: 12px;
+    color: #9993AA;
+    margin-top: 8px;
+}
+
+.customers-card {
+    background: #FFFFFF;
+    border: 1px solid #EEEAF6;
+    border-radius: 14px;
+    padding: 22px;
+    overflow-x: auto;
+}
+
+.customers-card table {
+    margin-top: 10px;
+}
+
+.customers-card tbody tr:hover {
+    background: #FAF8FF;
+}
+
+.customers-card .status.inactive {
+    background: #F0EEF4;
+    color: #89839B;
+}
+
+
+/* ========================================
+   11. CUSTOMER MODAL
+======================================== */
+
+.customer-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(40, 36, 61, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 1000;
+}
+
+.customer-modal {
+    width: 100%;
+    max-width: 440px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 26px;
+    box-shadow: 0 15px 45px rgba(40, 36, 61, 0.18);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    color: #30274D;
+}
+
+.modal-close {
+    border: none;
+    background: #F5F1FF;
+    color: #7655D9;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 20px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6E6784;
+    margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #EEEAF6;
+    border-radius: 9px;
+    outline: none;
+    font-size: 13px;
+    color: #28243D;
+    background: #FFFFFF;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #987CE0;
+    box-shadow: 0 0 0 3px #987CE022;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.modal-actions button {
+    padding: 11px 17px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.modal-actions button[type="submit"] {
+    background: #7655D9;
+    color: #FFFFFF;
+    border: none;
+}
+
+.modal-actions button[type="button"] {
+    background: #FFFFFF;
+    color: #6E6784;
+    border: 1px solid #EEEAF6;
+}
+
+
+/* ========================================
+   12. RESPONSIVE CUSTOMERS PAGE
+======================================== */
+
+@media (max-width: 650px) {
+    .customers-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .customer-modal {
+        padding: 20px;
+    }
+}
+
+/* Customer action buttons */
+
+.customer-action-btn {
+    border: none;
+    background: #F0EAFF;
+    color: #7655D9;
+    padding: 7px 12px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: 0.2s;
+}
+
+.customer-action-btn:hover {
+    background: #E4DAFF;
+}
+
+.customer-action-btn.delete-btn {
+    background: #FDECEF;
+    color: #D65F75;
+}
+
+.customer-action-btn.delete-btn:hover {
+    background: #F9DCE3;
+}
+

@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brightloop | Subscription Management</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <div class="logo">
+                <span class="logo-icon">✦</span>
+                brightloop
+            </div>
+
+            <p class="menu-heading">WORKSPACE</p>
+
+            <nav>
+                <a href="#" class="nav-link active" data-page="Dashboard">▦ Dashboard</a>
+                <a href="#" class="nav-link" data-page="Customers">♙ Customers</a>
+                <a href="#" class="nav-link" data-page="Products & Plans">▣ Products & Plans</a>
+                <a href="#" class="nav-link" data-page="Subscriptions">↻ Subscriptions</a>
+                <a href="#" class="nav-link" data-page="Invoices">▤ Invoices</a>
+                <a href="#" class="nav-link" data-page="Payments">◈ Payments</a>
+                <a href="#" class="nav-link" data-page="Discounts">％ Discounts</a>
+                <a href="#" class="nav-link" data-page="Reports">▥ Reports</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <a href="#" class="nav-link" data-page="Settings">⚙ Settings</a>
+                <div class="profile">
+                    <div class="avatar">N</div>
+                    <div>
+                        <strong>Noor</strong>
+                        <small>Administrator</small>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Top Navigation -->
+            <header class="topbar">
+
+                <div class="search-box">
+                    <span>⌕</span>
+                    <input type="text" placeholder="Search anything...">
+                </div>
+
+                <div class="user-section">
+                    <span>♧</span>
+                    <div class="user-avatar">N</div>
+                </div>
+
+            </header>
+
+
+            <!-- Dashboard Heading -->
+            <section class="welcome-section">
+
+                <div>
+                    <p class="eyebrow">OVERVIEW</p>
+                    <h1>Good morning, Noor ✦</h1>
+                    <p class="subtitle">
+                        Here's what's happening with your subscriptions today.
+                    </p>
+                </div>
+
+                <button class="date-button">◷ This month ⌄</button>
+
+            </section>
+
+
+            <!-- Statistics Cards -->
+            <section class="stats-grid">
+
+                <div class="stat-card purple">
+                    <p>Monthly Revenue</p>
+                    <h2>₹2,45,000</h2>
+                    <span>↑ 12.8% vs last month</span>
+                </div>
+
+                <div class="stat-card green">
+                    <p>Active Subscriptions</p>
+                    <h2>1,248</h2>
+                    <span>↑ 8.2% vs last month</span>
+                </div>
+
+                <div class="stat-card orange">
+                    <p>Outstanding</p>
+                    <h2>₹32,500</h2>
+                    <span>12 invoices awaiting payment</span>
+                </div>
+
+                <div class="stat-card pink">
+                    <p>Overdue Invoices</p>
+                    <h2>18</h2>
+                    <span>↓ 2.4% vs last month</span>
+                </div>
+
+            </section>
+
+
+            <!-- Dashboard Content -->
+            <section class="dashboard-content">
+
+                <div class="content-card">
+                    <h3>Revenue Overview</h3>
+                    <p class="subtitle">Your revenue performance over time</p>
+
+                    <div class="chart-placeholder">
+                        Revenue chart will appear here
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Recent Activity</h3>
+                    <p class="subtitle">Latest workspace updates</p>
+
+                    <div class="activity">
+                        <strong>New subscription</strong>
+                        <p>Acme Studio joined Pro plan</p>
+                    </div>
+
+                    <div class="activity">
+                        <strong>Invoice paid</strong>
+                        <p>INV-2026-1048 · ₹12,000</p>
+                    </div>
+
+                    <div class="activity">
+                        <strong>Discount applied</strong>
+                        <p>WELCOME10 · 10% off</p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- Recent Subscriptions -->
+            <section class="content-card subscriptions-section">
+
+                <h3>Recent Subscriptions</h3>
+                <p class="subtitle">
+                    Keep track of your latest customer subscriptions.
+                </p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>Next Billing</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Acme Studio</td>
+                            <td>Business Pro</td>
+                            <td>₹4,999/mo</td>
+                            <td>Nov 04, 2026</td>
+                            <td><span class="status active">Active</span></td>
+                        </tr>
+
+                        <tr>
+                            <td>Northstar Tech</td>
+                            <td>Enterprise</td>
+                            <td>₹12,000/mo</td>
+                            <td>Nov 08, 2026</td>
+                            <td><span class="status active">Active</span></td>
+                        </tr>
+
+                        <tr>
+                            <td>Greenfield Co.</td>
+                            <td>Starter</td>
+                            <td>₹1,499/mo</td>
+                            <td>Nov 12, 2026</td>
+                            <td><span class="status pending">Pending</span></td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+            </section>
+
+            <footer>
+                © 2026 Brightloop Software
+            </footer>
+
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
