@@ -1,7 +1,7 @@
 
 /* ==========================================
    BRIGHTLOOP - SUBSCRIPTION MANAGEMENT SYSTEM
-   ========================================== */
+========================================== */
 
 
 /* ---------- 1. INITIAL SETUP ---------- */
@@ -15,7 +15,7 @@ const dashboardHTML = mainContent.innerHTML;
 
 /* ---------- 2. CUSTOMER DATA ---------- */
 
-let customers = [
+let customers = JSON.parse(localStorage.getItem("brightloopCustomers")) || [
     {
         name: "Acme Studio",
         email: "hello@acmestudio.com",
@@ -35,6 +35,16 @@ let customers = [
         status: "Inactive"
     }
 ];
+
+
+/* SAVE CUSTOMER DATA */
+
+function saveCustomersToStorage() {
+    localStorage.setItem(
+        "brightloopCustomers",
+        JSON.stringify(customers)
+    );
+}
 
 
 /* ---------- 3. SIDEBAR NAVIGATION ---------- */
@@ -139,6 +149,7 @@ function showCustomersPage() {
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
@@ -159,11 +170,32 @@ function showCustomersPage() {
 
     document
         .getElementById("addCustomerBtn")
-        .addEventListener("click", openCustomerModal);
+        .addEventListener("click", () => openCustomerModal());
 
     document
         .getElementById("customerSearch")
         .addEventListener("input", searchCustomers);
+
+    // Handle Edit and Delete button clicks
+    document
+        .getElementById("customerTableBody")
+        .addEventListener("click", function(event) {
+
+            const button = event.target.closest("button");
+
+            if (!button) return;
+
+            const index = Number(button.dataset.index);
+
+            if (button.classList.contains("edit-btn")) {
+                openCustomerModal(index);
+            }
+
+            if (button.classList.contains("delete-btn")) {
+                deleteCustomer(index);
+            }
+
+        });
 
 }
 
@@ -182,7 +214,7 @@ function renderCustomers(customerList = customers) {
 
         tableBody.innerHTML = `
             <tr>
-                <td colspan="4">No customers found.</td>
+                <td colspan="5">No customers found.</td>
             </tr>
         `;
 
@@ -190,6 +222,9 @@ function renderCustomers(customerList = customers) {
     }
 
     customerList.forEach(customer => {
+
+        // Find the customer's original position in the array
+        const index = customers.indexOf(customer);
 
         const row = document.createElement("tr");
 
@@ -215,11 +250,32 @@ function renderCustomers(customerList = customers) {
 
         statusCell.appendChild(statusBadge);
 
+        const actionsCell = document.createElement("td");
+
+        actionsCell.innerHTML = `
+            <button
+                type="button"
+                class="customer-action-btn edit-btn"
+                data-index="${index}"
+            >
+                Edit
+            </button>
+
+            <button
+                type="button"
+                class="customer-action-btn delete-btn"
+                data-index="${index}"
+            >
+                Delete
+            </button>
+        `;
+
         row.append(
             nameCell,
             emailCell,
             phoneCell,
-            statusCell
+            statusCell,
+            actionsCell
         );
 
         tableBody.appendChild(row);
@@ -229,12 +285,20 @@ function renderCustomers(customerList = customers) {
 }
 
 
-/* ---------- 7. OPEN ADD CUSTOMER MODAL ---------- */
+/* ---------- 7. OPEN CUSTOMER MODAL ---------- */
 
-function openCustomerModal() {
+function openCustomerModal(customerIndex = null) {
 
     // Prevent multiple modals
     if (document.getElementById("customerModal")) return;
+
+    const isEditing = customerIndex !== null;
+
+    const customer = isEditing
+        ? customers[customerIndex]
+        : null;
+
+    if (isEditing && !customer) return;
 
     const modal = document.createElement("div");
 
@@ -248,10 +312,15 @@ function openCustomerModal() {
             <div class="modal-header">
 
                 <div>
-                    <h2>Add New Customer</h2>
+                    <h2>
+                        ${isEditing ? "Edit Customer" : "Add New Customer"}
+                    </h2>
 
                     <p>
-                        Enter the details of your new customer.
+                        ${isEditing
+                            ? "Update the customer's information."
+                            : "Enter the details of your new customer."
+                        }
                     </p>
                 </div>
 
@@ -348,7 +417,7 @@ function openCustomerModal() {
                         type="submit"
                         class="save-btn"
                     >
-                        Save Customer
+                        ${isEditing ? "Update Customer" : "Save Customer"}
                     </button>
 
                 </div>
@@ -361,20 +430,42 @@ function openCustomerModal() {
 
     document.body.appendChild(modal);
 
+
+    // Fill existing details when editing
+    if (isEditing) {
+
+        document.getElementById("customerName").value = customer.name;
+
+        document.getElementById("customerEmail").value = customer.email;
+
+        document.getElementById("customerPhone").value = customer.phone;
+
+        document.getElementById("customerStatus").value = customer.status;
+
+    }
+
+
     // Close button
     document
         .getElementById("closeCustomerModal")
         .addEventListener("click", closeCustomerModal);
+
 
     // Cancel button
     document
         .getElementById("cancelCustomer")
         .addEventListener("click", closeCustomerModal);
 
+
     // Form submission
     document
         .getElementById("customerForm")
-        .addEventListener("submit", saveCustomer);
+        .addEventListener("submit", function(event) {
+
+            saveCustomer(event, customerIndex);
+
+        });
+
 
     // Close when clicking outside the form
     modal.addEventListener("click", function(event) {
@@ -401,9 +492,9 @@ function closeCustomerModal() {
 }
 
 
-/* ---------- 9. SAVE NEW CUSTOMER ---------- */
+/* ---------- 9. SAVE OR UPDATE CUSTOMER ---------- */
 
-function saveCustomer(event) {
+function saveCustomer(event, customerIndex = null) {
 
     event.preventDefault();
 
@@ -453,12 +544,15 @@ function saveCustomer(event) {
     }
 
 
-    // Check duplicate email
-    const emailExists = customers.some(customer =>
+    // Check duplicate email, excluding the customer being edited
+    const emailExists = customers.some((customer, index) => {
 
-        customer.email.toLowerCase() === email.toLowerCase()
+        return (
+            customer.email.toLowerCase() === email.toLowerCase() &&
+            index !== customerIndex
+        );
 
-    );
+    });
 
     if (emailExists) {
 
@@ -469,7 +563,7 @@ function saveCustomer(event) {
 
 
     // Create customer object
-    const newCustomer = {
+    const customerData = {
 
         name: name,
         email: email,
@@ -479,25 +573,68 @@ function saveCustomer(event) {
     };
 
 
-    // Add customer
-    customers.push(newCustomer);
+    if (customerIndex !== null) {
 
+        // Update existing customer
+        customers[customerIndex] = customerData;
 
-    // Refresh table
-    renderCustomers();
+    } else {
+
+        // Add new customer
+        customers.push(customerData);
+
+    }
+    saveCustomersToStorage();
 
 
     // Close modal
     closeCustomerModal();
 
 
+    // Refresh table while preserving search
+    searchCustomers();
+
+
     // Confirmation
-    alert("Customer added successfully!");
+    alert(
+        customerIndex !== null
+            ? "Customer updated successfully!"
+            : "Customer added successfully!"
+    );
 
 }
 
 
-/* ---------- 10. SEARCH CUSTOMERS ---------- */
+/* ---------- 10. DELETE CUSTOMER ---------- */
+
+function deleteCustomer(index) {
+
+    const customer = customers[index];
+
+    if (!customer) return;
+
+    const confirmDelete = confirm(
+        `Are you sure you want to delete ${customer.name}?`
+    );
+
+    if (!confirmDelete) return;
+
+
+    // Remove customer from array
+    customers.splice(index, 1);
+    saveCustomersToStorage();
+
+
+    // Refresh table
+    searchCustomers();
+
+
+    alert("Customer deleted successfully!");
+
+}
+
+
+/* ---------- 11. SEARCH CUSTOMERS ---------- */
 
 function searchCustomers() {
 
@@ -526,7 +663,7 @@ function searchCustomers() {
 }
 
 
-/* ---------- 11. OTHER PAGE PLACEHOLDERS ---------- */
+/* ---------- 12. OTHER PAGE PLACEHOLDERS ---------- */
 
 function showPlaceholderPage(pageName) {
 
@@ -585,6 +722,6 @@ function showPlaceholderPage(pageName) {
 }
 
 
-/* ---------- 12. INITIAL PAGE ---------- */
+/* ---------- 13. INITIAL PAGE ---------- */
 
 showPage("Dashboard");
