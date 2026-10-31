@@ -88,3 +88,35 @@ CREATE TABLE payments (
     FOREIGN KEY (invoice_id)
         REFERENCES invoices(invoice_id)
 );
+CREATE TABLE subscription_items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    subscription_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10,2) NOT NULL,
+    tax_rate DECIMAL(5,2) DEFAULT 0,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    line_total DECIMAL(10,2) NOT NULL,
+
+    FOREIGN KEY (subscription_id)
+        REFERENCES subscriptions(subscription_id),
+
+    FOREIGN KEY (product_id)
+        REFERENCES products(product_id)
+);CREATE TABLE invoice_items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id INT NOT NULL,
+    product_id INT NOT NULL,
+    description VARCHAR(255),
+    quantity INT NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10,2) NOT NULL,
+    tax_rate DECIMAL(5,2) DEFAULT 0,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    line_total DECIMAL(10,2) NOT NULL,
+
+    FOREIGN KEY (invoice_id)
+        REFERENCES invoices(invoice_id),
+
+    FOREIGN KEY (product_id)
+        REFERENCES products(product_id)
+);
