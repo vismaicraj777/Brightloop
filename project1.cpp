@@ -19,5 +19,4 @@ int main()
     cin>>user1.role;
       cout<<"Enter your password:";
     cin>>user1.password;
-
 }
