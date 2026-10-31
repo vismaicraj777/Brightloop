@@ -647,4 +647,92 @@ footer {
 .customer-action-btn.delete-btn:hover {
     background: #F9DCE3;
 }
+/* PRODUCT VARIANTS */
+.variants-section {
+    border-top: 1px solid #EEEAF6;
+    padding-top: 20px;
+    margin-top: 10px;
+}
 
+.variants-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.variants-heading h3 {
+    font-size: 14px;
+    color: #30274D;
+}
+
+.variants-heading p,
+.variant-help {
+    font-size: 11px;
+    color: #9993AA;
+    margin-top: 5px;
+}
+
+.add-variant-btn {
+    background: #F0EAFF;
+    color: #7655D9;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.variant-label-row,
+.variant-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 32px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 9px;
+}
+
+.variant-label-row {
+    font-size: 10px;
+    color: #89839B;
+}
+
+.variant-row input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #EEEAF6;
+    border-radius: 8px;
+}
+
+.remove-variant-btn {
+    border: none;
+    background: #FDECEF;
+    color: #D65F75;
+    border-radius: 7px;
+    height: 34px;
+    cursor: pointer;
+}
+
+.variant-count {
+    display: inline-block;
+    background: #F0EAFF;
+    color: #7655D9;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+}
+
+.variant-count.empty {
+    background: #F0EEF4;
+    color: #89839B;
+}
+
+.variant-preview {
+    display: block;
+    color: #89839B;
+    font-size: 10px;
+    margin-top: 5px;
+}
