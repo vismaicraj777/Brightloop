@@ -1,3 +1,6 @@
+/* =====================================================
+   BRIGHTLOOP - STYLESHEET
+===================================================== */
 
 /* ==============================
    1. GLOBAL STYLING
@@ -13,6 +16,17 @@ body {
     font-family: 'Segoe UI', sans-serif;
     background: #F8F7FC;
     color: #28243D;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    cursor: pointer;
+}
+
+button {
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .app-container {
@@ -73,20 +87,12 @@ nav {
     display: flex;
     align-items: center;
     width: 100%;
-    box-sizing: border-box;
     padding: 13px 16px;
     min-height: 46px;
     font-size: 14px;
     font-weight: 500;
     border-radius: 10px;
     text-decoration: none;
-}
-
-.sidebar-bottom .nav-link {
-    width: 100%;
-    min-height: 46px;
-    padding: 13px 16px;
-    font-size: 14px;
 }
 
 .nav-link:hover {
@@ -221,7 +227,6 @@ nav {
     padding: 11px 15px;
     border-radius: 9px;
     color: #6E6784;
-    cursor: pointer;
 }
 
 
@@ -295,18 +300,6 @@ nav {
     margin-bottom: 7px;
 }
 
-.chart-placeholder {
-    height: 190px;
-    margin-top: 22px;
-    background: linear-gradient(135deg, #F8F5FF, #FDFBFF);
-    border: 1px dashed #D9CFF4;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    color: #A398C5;
-    font-size: 12px;
-}
-
 .activity {
     padding: 15px 0;
     border-bottom: 1px solid #F1EEF6;
@@ -328,11 +321,16 @@ nav {
 
 
 /* ==============================
-   7. SUBSCRIPTIONS TABLE
+   7. TABLES AND STATUS BADGES
 ================================ */
 
 .subscriptions-section {
     margin-bottom: 20px;
+    overflow-x: auto;
+}
+
+/* Tables on list pages scroll sideways on small screens */
+.content-card {
     overflow-x: auto;
 }
 
@@ -359,21 +357,43 @@ td {
     border-bottom: 1px solid #F3F0F7;
 }
 
+tbody tr:hover {
+    background: #FAF8FF;
+}
+
 .status {
+    display: inline-block;
     padding: 6px 11px;
     border-radius: 20px;
     font-size: 10px;
     font-weight: bold;
+    background: #F0EEF4;
+    color: #89839B;
 }
 
-.active {
+.status.active,
+.status.paid {
     background: #E7F8F0;
     color: #269B74;
 }
 
-.pending {
+.status.pending,
+.status.quotation,
+.status.partially-paid {
     background: #FFF3E2;
     color: #D39642;
+}
+
+.status.confirmed {
+    background: #F0EAFF;
+    color: #7655D9;
+}
+
+.status.draft,
+.status.closed,
+.status.inactive {
+    background: #F0EEF4;
+    color: #89839B;
 }
 
 
@@ -450,57 +470,21 @@ footer {
     .date-button {
         font-size: 10px;
     }
+
+    .customers-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .customer-modal {
+        padding: 20px;
+    }
 }
 
 
-/* ========================================
-   10. CUSTOMERS PAGE
-======================================== */
-
-.customers-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 35px 0 25px;
-    gap: 15px;
-}
-
-.customers-header h1 {
-    font-size: 25px;
-    color: #28243D;
-}
-
-.customers-header p {
-    font-size: 12px;
-    color: #9993AA;
-    margin-top: 8px;
-}
-
-.customers-card {
-    background: #FFFFFF;
-    border: 1px solid #EEEAF6;
-    border-radius: 14px;
-    padding: 22px;
-    overflow-x: auto;
-}
-
-.customers-card table {
-    margin-top: 10px;
-}
-
-.customers-card tbody tr:hover {
-    background: #FAF8FF;
-}
-
-.customers-card .status.inactive {
-    background: #F0EEF4;
-    color: #89839B;
-}
-
-
-/* ========================================
-   11. CUSTOMER MODAL
-======================================== */
+/* ==============================
+   10. MODALS AND FORMS
+================================ */
 
 .customer-modal-overlay {
     position: fixed;
@@ -516,6 +500,8 @@ footer {
 .customer-modal {
     width: 100%;
     max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
     background: #FFFFFF;
     border-radius: 16px;
     padding: 26px;
@@ -534,6 +520,12 @@ footer {
     color: #30274D;
 }
 
+.modal-header p {
+    font-size: 12px;
+    color: #9993AA;
+    margin-top: 4px;
+}
+
 .modal-close {
     border: none;
     background: #F5F1FF;
@@ -542,6 +534,11 @@ footer {
     height: 32px;
     border-radius: 8px;
     font-size: 20px;
+}
+
+.modal-close:hover {
+    background: #E4DAFF;
+    color: #6242C0;
 }
 
 .form-group {
@@ -557,19 +554,22 @@ footer {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 12px;
     border: 1px solid #EEEAF6;
     border-radius: 9px;
     outline: none;
+    font-family: inherit;
     font-size: 13px;
     color: #28243D;
     background: #FFFFFF;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     border-color: #987CE0;
     box-shadow: 0 0 0 3px #987CE022;
 }
@@ -586,7 +586,6 @@ footer {
     border-radius: 9px;
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
 }
 
 .modal-actions button[type="submit"] {
@@ -602,26 +601,9 @@ footer {
 }
 
 
-/* ========================================
-   12. RESPONSIVE CUSTOMERS PAGE
-======================================== */
-
-@media (max-width: 650px) {
-
-    .customers-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .customer-modal {
-        padding: 20px;
-    }
-}
-
-
-/* ========================================
-   13. CUSTOMER ACTION BUTTONS
-======================================== */
+/* ==============================
+   11. ACTION BUTTONS
+================================ */
 
 .customer-action-btn {
     border: none;
@@ -631,7 +613,6 @@ footer {
     border-radius: 7px;
     font-size: 11px;
     font-weight: 600;
-    cursor: pointer;
     margin-right: 5px;
     transition: 0.2s;
 }
@@ -640,19 +621,38 @@ footer {
     background: #E4DAFF;
 }
 
-.customer-action-btn.delete-btn {
+.customer-action-btn.delete-btn,
+.customer-action-btn.delete-invoice-btn,
+.customer-action-btn.delete-payment-btn {
     background: #FDECEF;
     color: #D65F75;
 }
 
-.customer-action-btn.delete-btn:hover {
+.customer-action-btn.delete-btn:hover,
+.customer-action-btn.delete-invoice-btn:hover,
+.customer-action-btn.delete-payment-btn:hover {
     background: #F9DCE3;
 }
 
+.primary-btn {
+    background: #7655D9;
+    color: white;
+    border: none;
+    padding: 11px 17px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+}
 
-/* ========================================
-   14. PRODUCT VARIANTS
-======================================== */
+.primary-btn:hover {
+    background: #6242C0;
+}
+
+
+/* ==============================
+   12. PRODUCT VARIANTS
+================================ */
 
 .variants-section {
     border-top: 1px solid #EEEAF6;
@@ -686,7 +686,6 @@ footer {
     border: none;
     padding: 9px 12px;
     border-radius: 8px;
-    cursor: pointer;
     font-size: 11px;
     font-weight: 600;
 }
@@ -719,7 +718,6 @@ footer {
     color: #D65F75;
     border-radius: 7px;
     height: 34px;
-    cursor: pointer;
 }
 
 .variant-count {
@@ -744,9 +742,11 @@ footer {
 }
 
 
-/* ========================================
-   15. COMPACT SUBSCRIPTION POPUP
-======================================== */
+/* ==============================
+   13. COMPACT MODALS
+================================ */
+
+/* Subscription modal */
 
 #subscriptionModal {
     padding: 12px;
@@ -755,15 +755,11 @@ footer {
 }
 
 #subscriptionModal .customer-modal {
-    width: 100%;
     max-width: 320px;
     max-height: 72vh;
-    overflow-y: auto;
     padding: 14px 17px;
     border-radius: 12px;
 }
-
-/* Modal header */
 
 #subscriptionModal .modal-header {
     margin-bottom: 10px;
@@ -784,8 +780,6 @@ footer {
     font-size: 17px;
 }
 
-/* Form fields */
-
 #subscriptionModal .form-group {
     margin-bottom: 7px;
 }
@@ -803,15 +797,11 @@ footer {
     border-radius: 7px;
 }
 
-/* Amount information */
-
 #subscriptionModal .variant-help {
     font-size: 9px;
     line-height: 1.4;
     margin-top: 4px;
 }
-
-/* Buttons */
 
 #subscriptionModal .modal-actions {
     margin-top: 10px;
@@ -824,8 +814,6 @@ footer {
     border-radius: 7px;
 }
 
-/* Smaller screens */
-
 @media (max-width: 450px) {
 
     #subscriptionModal .customer-modal {
@@ -833,120 +821,8 @@ footer {
         max-height: 75vh;
     }
 }
-/* ========================================
-   16. DISCOUNTS PAGE
-======================================== */
 
-.page-header {
-    margin: 35px 0 25px;
-}
-
-.page-header h1 {
-    font-size: 25px;
-    color: #28243D;
-}
-
-.page-header p {
-    font-size: 12px;
-    color: #9993AA;
-    margin-top: 8px;
-}
-
-.primary-btn {
-    background: #7655D9;
-    color: white;
-    border: none;
-    padding: 11px 17px;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.primary-btn:hover {
-    background: #6242C0;
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.card-header h2 {
-    font-size: 18px;
-    color: #30274D;
-}
-
-.discounts-card {
-    background: white;
-    border: 1px solid #EEEAF6;
-    border-radius: 14px;
-    padding: 22px;
-    margin-top: 20px;
-    overflow-x: auto;
-}
-
-.discounts-card input {
-    padding: 10px 13px;
-    border: 1px solid #EEEAF6;
-    border-radius: 8px;
-    outline: none;
-    font-size: 12px;
-}
-
-.discounts-card input:focus {
-    border-color: #987CE0;
-    box-shadow: 0 0 0 3px #987CE022;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 35px 15px;
-    color: #9993AA;
-    font-size: 13px;
-}
-.discounts-card input {
-    width: 250px;
-    padding: 11px 14px;
-    border: 1px solid #EEEAF6;
-    border-radius: 9px;
-    outline: none;
-    font-size: 12px;
-    color: #28243D;
-    background: #FFFFFF;
-}
-
-.discounts-card input:focus {
-    border-color: #987CE0;
-    box-shadow: 0 0 0 3px #987CE022;
-}
-/* Discounts page header spacing */
-
-.page-header {
-    margin-top: 35px;
-    margin-bottom: 35px;
-}
-
-.page-header .primary-btn {
-    display: inline-block;
-    margin-top: 18px;
-}
-.page-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    margin: 35px 0 35px;
-}
-
-.page-header .primary-btn {
-    margin-top: 5px;
-}
-/* Compact Discount Modal */
+/* Discount modal */
 
 #discountModal {
     padding: 12px;
@@ -956,7 +832,6 @@ footer {
 #discountModal .customer-modal {
     max-width: 360px;
     max-height: 85vh;
-    overflow-y: auto;
     padding: 18px 20px;
 }
 
@@ -992,19 +867,7 @@ footer {
     padding: 9px 12px;
     font-size: 11px;
 }
-/* ========================================
-   17. BUTTON HOVER AND CURSOR STYLING
-======================================== */
 
-/* All buttons should show clickable cursor */
-button,
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
-    cursor: pointer;
-}
-
-/* Purple close button */
 #discountModal .modal-close,
 #discountModal .modal-header button {
     background: #F0EAFF;
@@ -1024,111 +887,7 @@ input[type="reset"] {
     color: #6242C0;
 }
 
-/* Smooth hover effect for buttons */
-button {
-    transition: background 0.2s ease, color 0.2s ease;
-}
-/* Discount Action Buttons */
-
-.discount-action-btn {
-    border: none;
-    padding: 7px 13px;
-    border-radius: 7px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-right: 5px;
-    transition: 0.2s;
-}
-
-.discount-action-btn.edit-btn {
-    background: #F0EAFF;
-    color: #7655D9;
-}
-
-.discount-action-btn.edit-btn:hover {
-    background: #E4DAFF;
-}
-
-.discount-action-btn.delete-btn {
-    background: #FDECEF;
-    color: #D65F75;
-}
-
-.discount-action-btn.delete-btn:hover {
-    background: #F9DCE3;
-}
-
-/* Invoice Action Button Spacing */
-
-.invoice-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.invoice-actions button {
-    margin: 0;
-}
-/* Invoice Discount Display */
-
-.invoice-amount-details {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.invoice-subtotal {
-    color: #89839B;
-    font-size: 11px;
-}
-
-.invoice-discount {
-    color: #29A781;
-    font-size: 10px;
-}
-
-.invoice-final-amount {
-    color: #30274D;
-    font-size: 12px;
-}
-/* Payment Invoice Discount Summary */
-
-.payment-invoice-summary {
-    background: #F8F5FF;
-    border: 1px solid #E8DFFF;
-    border-radius: 12px;
-    padding: 15px;
-    margin: 12px 0 18px;
-}
-
-.payment-invoice-summary h3 {
-    color: #30274D;
-    font-size: 15px;
-    margin: 0 0 12px;
-}
-
-.payment-summary-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 13px;
-    margin-top: 9px;
-    color: #625B75;
-}
-
-.payment-summary-row.discount {
-    color: #269B72;
-}
-
-.payment-summary-row.final {
-    border-top: 1px solid #E3DAF5;
-    padding-top: 12px;
-    margin-top: 12px;
-    color: #30274D;
-}
-/* Compact Record Payment Modal */
+/* Payment modal */
 
 #paymentModal .customer-modal {
     width: 460px;
@@ -1180,9 +939,174 @@ button {
     margin-top: 12px;
 }
 
-/* ========================================
-   REPORTS & ANALYTICS STYLING
-======================================== */
+
+/* ==============================
+   14. DISCOUNTS PAGE
+================================ */
+
+.page-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin: 35px 0;
+}
+
+.page-header h1 {
+    font-size: 25px;
+    color: #28243D;
+}
+
+.page-header p {
+    font-size: 12px;
+    color: #9993AA;
+    margin-top: 8px;
+}
+
+.page-header .primary-btn {
+    margin-top: 5px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.card-header h2 {
+    font-size: 18px;
+    color: #30274D;
+}
+
+.card-header input {
+    width: 250px;
+    max-width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #EEEAF6;
+    border-radius: 9px;
+    outline: none;
+    font-size: 12px;
+    color: #28243D;
+    background: #FFFFFF;
+}
+
+.card-header input:focus {
+    border-color: #987CE0;
+    box-shadow: 0 0 0 3px #987CE022;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 35px 15px;
+    color: #9993AA;
+    font-size: 13px;
+}
+
+.discount-action-btn {
+    border: none;
+    padding: 7px 13px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 5px;
+    transition: 0.2s;
+}
+
+.discount-action-btn.edit-btn {
+    background: #F0EAFF;
+    color: #7655D9;
+}
+
+.discount-action-btn.edit-btn:hover {
+    background: #E4DAFF;
+}
+
+.discount-action-btn.delete-btn {
+    background: #FDECEF;
+    color: #D65F75;
+}
+
+.discount-action-btn.delete-btn:hover {
+    background: #F9DCE3;
+}
+
+
+/* ==============================
+   15. INVOICES
+================================ */
+
+.invoice-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.invoice-actions button {
+    margin: 0;
+}
+
+.invoice-amount-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.invoice-subtotal {
+    color: #89839B;
+    font-size: 11px;
+}
+
+.invoice-discount {
+    color: #29A781;
+    font-size: 10px;
+}
+
+.invoice-final-amount {
+    color: #30274D;
+    font-size: 12px;
+}
+
+.payment-invoice-summary {
+    background: #F8F5FF;
+    border: 1px solid #E8DFFF;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 12px 0 18px;
+}
+
+.payment-invoice-summary h3 {
+    color: #30274D;
+    font-size: 15px;
+    margin: 0 0 12px;
+}
+
+.payment-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    margin-top: 9px;
+    color: #625B75;
+}
+
+.payment-summary-row.discount {
+    color: #269B72;
+}
+
+.payment-summary-row.final {
+    border-top: 1px solid #E3DAF5;
+    padding-top: 12px;
+    margin-top: 12px;
+    color: #30274D;
+}
+
+
+/* ==============================
+   16. REPORTS AND CHARTS
+================================ */
 
 .reports-grid {
     display: grid;
@@ -1263,24 +1187,27 @@ button {
         grid-template-columns: 1fr;
     }
 }
-/* Monthly Revenue Chart */
+
+/* Revenue bar charts (Reports page and Dashboard) */
 
 .revenue-chart-card {
     margin-top: 22px;
     padding: 22px;
 }
 
-.monthly-revenue-chart {
+.monthly-revenue-chart,
+.dashboard-revenue-chart {
     display: flex;
     align-items: flex-end;
     justify-content: space-around;
     gap: 15px;
     height: 230px;
-    padding-top: 20px;
+    padding: 20px 10px 10px;
 }
 
 .revenue-bar-item {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1292,6 +1219,7 @@ button {
 .revenue-bar-value {
     font-size: 10px;
     color: #777187;
+    white-space: nowrap;
 }
 
 .revenue-bar-track {
@@ -1307,7 +1235,6 @@ button {
 
 .revenue-bar-fill {
     width: 100%;
-    min-height: 0;
     background: #7655D9;
     border-radius: 8px;
 }
@@ -1316,56 +1243,11 @@ button {
     font-size: 12px;
     color: #777187;
 }
-/* Dashboard Revenue Chart */
 
-.dashboard-revenue-chart {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-around;
-    gap: 15px;
-    height: 230px;
-    padding: 20px 10px 10px;
-}
 
-.dashboard-revenue-chart .revenue-bar-item {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 8px;
-}
-
-.dashboard-revenue-chart .revenue-bar-value {
-    font-size: 10px;
-    color: #777187;
-    white-space: nowrap;
-}
-
-.dashboard-revenue-chart .revenue-bar-track {
-    height: 150px;
-    width: 100%;
-    max-width: 45px;
-    background: #F0EAFF;
-    border-radius: 8px;
-    display: flex;
-    align-items: flex-end;
-    overflow: hidden;
-}
-
-.dashboard-revenue-chart .revenue-bar-fill {
-    width: 100%;
-    background: #7655D9;
-    border-radius: 8px;
-}
-
-.dashboard-revenue-chart .revenue-bar-item span {
-    font-size: 12px;
-    color: #777187;
-}
-
+/* ==============================
+   17. SETTINGS PAGE
+================================ */
 
 .settings-container {
     display: grid;
@@ -1403,7 +1285,6 @@ button {
     border: 1px solid #d1d5db;
     border-radius: 7px;
     font-size: 14px;
-    box-sizing: border-box;
 }
 
 .settings-card input[type="checkbox"] {
@@ -1417,7 +1298,6 @@ button {
     background: #1e3a5f;
     color: white;
     font-weight: 600;
-    cursor: pointer;
 }
 
 #settingsMessage {
@@ -1431,7 +1311,10 @@ button {
     }
 }
 
-/* ===== Brightloop Login Page ===== */
+
+/* ==============================
+   18. LOGIN PAGE
+================================ */
 
 .login-screen {
     min-height: 100vh;
@@ -1440,7 +1323,6 @@ button {
     justify-content: center;
     align-items: center;
     padding: 24px;
-    box-sizing: border-box;
     background: linear-gradient(135deg, #eef4ff, #dce8f7, #f5f8fc);
     font-family: 'Segoe UI', sans-serif;
 }
@@ -1449,7 +1331,6 @@ button {
     width: 100%;
     max-width: 420px;
     padding: 42px;
-    box-sizing: border-box;
     background: #ffffff;
     border: 1px solid #e5eaf2;
     border-radius: 18px;
@@ -1457,11 +1338,12 @@ button {
 }
 
 .login-card .logo {
+    justify-content: center;
     color: #1e3a5f;
     font-size: 27px;
     font-weight: 750;
     text-align: center;
-    margin-bottom: 35px;
+    margin: 0 0 35px;
 }
 
 .login-card .logo-icon {
@@ -1483,22 +1365,21 @@ button {
     margin-bottom: 30px;
 }
 
-#loginForm {
+.auth-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-#loginForm label {
+.auth-form label {
     color: #334155;
     font-size: 14px;
     font-weight: 600;
 }
 
-#loginForm input {
+.auth-form input {
     width: 100%;
     padding: 13px 14px;
-    box-sizing: border-box;
     border: 1px solid #d5deea;
     border-radius: 9px;
     outline: none;
@@ -1507,12 +1388,12 @@ button {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-#loginForm input:focus {
+.auth-form input:focus {
     border-color: #4779b9;
     box-shadow: 0 0 0 3px rgba(71, 121, 185, 0.12);
 }
 
-#loginForm button {
+.auth-form button {
     width: 100%;
     padding: 14px;
     margin-top: 10px;
@@ -1522,11 +1403,10 @@ button {
     color: white;
     font-size: 15px;
     font-weight: 600;
-    cursor: pointer;
     transition: background 0.2s, transform 0.2s;
 }
 
-#loginForm button:hover {
+.auth-form button:hover {
     background: #294e7d;
     transform: translateY(-1px);
 }
@@ -1542,4 +1422,108 @@ button {
     .login-card {
         padding: 30px 24px;
     }
+}
+
+
+/* ==============================
+   19. LOGOUT BUTTON
+================================ */
+
+.logout-btn {
+    width: 100%;
+    margin-top: 7px;
+    padding: 13px 16px;
+    min-height: 46px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #D65F75;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.logout-btn:hover {
+    background: #FDECEF;
+}
+
+
+/* ==============================
+   20. AUTH FORMS (LOGIN / SIGN UP)
+================================ */
+
+.hidden {
+    display: none !important;
+}
+
+.auth-form input.invalid {
+    border-color: #D65F75;
+    box-shadow: 0 0 0 3px rgba(214, 95, 117, 0.12);
+}
+
+.field-error {
+    margin: -6px 0 6px;
+    color: #D65F75;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.field-error:empty {
+    display: none;
+}
+
+.field-error.form-error {
+    margin: 0;
+    padding: 10px 12px;
+    background: #FDECEF;
+    border-radius: 8px;
+}
+
+.password-rules {
+    list-style: none;
+    margin: -4px 0 8px;
+    padding: 12px 14px;
+    background: #F4F7FB;
+    border-radius: 9px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.password-rules li {
+    padding: 3px 0;
+}
+
+.password-rules li::before {
+    content: "✗";
+    display: inline-block;
+    width: 18px;
+    color: #94a3b8;
+    font-weight: bold;
+}
+
+.password-rules li.met {
+    color: #15803d;
+}
+
+.password-rules li.met::before {
+    content: "✓";
+    color: #15803d;
+}
+
+.login-card .auth-switch {
+    margin: 22px 0 0;
+    font-size: 14px;
+    color: #64748b;
+    text-align: center;
+}
+
+.login-card .auth-switch a {
+    color: #1e3a5f;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-card .auth-switch a:hover {
+    text-decoration: underline;
 }

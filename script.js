@@ -1,128 +1,55 @@
 /* =====================================================
    BRIGHTLOOP - SUBSCRIPTION MANAGEMENT SYSTEM
-   Dashboard + Customers + Products + Subscriptions
-   + Invoices + Payments
    Data storage: Browser localStorage
 ===================================================== */
 
-
-/* =====================================================
-   1. INITIAL SETUP
-===================================================== */
+/* ---------- 1. INITIAL SETUP ---------- */
 
 const navLinks = document.querySelectorAll(".nav-link");
 const mainContent = document.querySelector(".main-content");
-
 const dashboardHTML = mainContent.innerHTML;
 
 
-/* =====================================================
-   2. DATA STORAGE
-===================================================== */
+/* ---------- 2. DATA STORAGE ---------- */
 
-let customers = JSON.parse(
-    localStorage.getItem("brightloopCustomers")
-) || [
-    {
-        name: "Acme Studio",
-        email: "hello@acmestudio.com",
-        phone: "+91 9876543210",
-        status: "Active"
-    },
-    {
-        name: "Northstar Tech",
-        email: "contact@northstar.com",
-        phone: "+91 9876543211",
-        status: "Active"
-    },
-    {
-        name: "Greenfield Co.",
-        email: "info@greenfield.com",
-        phone: "+91 9876543212",
-        status: "Inactive"
-    }
+let customers = JSON.parse(localStorage.getItem("brightloopCustomers")) || [
+    { name: "Acme Studio", email: "hello@acmestudio.com", phone: "+91 9876543210", status: "Active" },
+    { name: "Northstar Tech", email: "contact@northstar.com", phone: "+91 9876543211", status: "Active" },
+    { name: "Greenfield Co.", email: "info@greenfield.com", phone: "+91 9876543212", status: "Inactive" }
 ];
+let products = JSON.parse(localStorage.getItem("brightloopProducts")) || [];
+let subscriptions = JSON.parse(localStorage.getItem("brightloopSubscriptions")) || [];
+let invoices = JSON.parse(localStorage.getItem("brightloopInvoices")) || [];
+let payments = JSON.parse(localStorage.getItem("brightloopPayments")) || [];
+let discounts = JSON.parse(localStorage.getItem("brightloopDiscounts")) || [];
 
-let products = JSON.parse(
-    localStorage.getItem("brightloopProducts")
-) || [];
-
-let subscriptions = JSON.parse(
-    localStorage.getItem("brightloopSubscriptions")
-) || [];
-
-let invoices = JSON.parse(
-    localStorage.getItem("brightloopInvoices")
-) || [];
-
-let payments = JSON.parse(
-    localStorage.getItem("brightloopPayments")
-) || [];
-
-let discounts = JSON.parse(
-    localStorage.getItem("brightloopDiscounts")
-) || [];
+function saveCustomersToStorage() { localStorage.setItem("brightloopCustomers", JSON.stringify(customers)); }
+function saveProductsToStorage() { localStorage.setItem("brightloopProducts", JSON.stringify(products)); }
+function saveSubscriptionsToStorage() { localStorage.setItem("brightloopSubscriptions", JSON.stringify(subscriptions)); }
+function saveInvoicesToStorage() { localStorage.setItem("brightloopInvoices", JSON.stringify(invoices)); }
+function savePaymentsToStorage() { localStorage.setItem("brightloopPayments", JSON.stringify(payments)); }
+function saveDiscountsToStorage() { localStorage.setItem("brightloopDiscounts", JSON.stringify(discounts)); }
 
 
-function saveCustomersToStorage() {
-    localStorage.setItem("brightloopCustomers", JSON.stringify(customers));
-}
-
-function saveProductsToStorage() {
-    localStorage.setItem("brightloopProducts", JSON.stringify(products));
-}
-
-function saveSubscriptionsToStorage() {
-    localStorage.setItem("brightloopSubscriptions", JSON.stringify(subscriptions));
-}
-
-function saveInvoicesToStorage() {
-    localStorage.setItem("brightloopInvoices", JSON.stringify(invoices));
-}
-
-function savePaymentsToStorage() {
-    localStorage.setItem("brightloopPayments", JSON.stringify(payments));
-}
-
-function saveDiscountsToStorage() {
-    localStorage.setItem("brightloopDiscounts", JSON.stringify(discounts));
-}
-
-/* =====================================================
-   3. SIDEBAR NAVIGATION
-===================================================== */
+/* ---------- 3. SIDEBAR NAVIGATION ---------- */
 
 navLinks.forEach(link => {
-
-    link.addEventListener("click", function(event) {
-
+    link.addEventListener("click", function (event) {
         event.preventDefault();
-
         navLinks.forEach(nav => nav.classList.remove("active"));
-
         this.classList.add("active");
-
         showPage(this.dataset.page);
     });
-
 });
 
 
-/* =====================================================
-   4. PAGE NAVIGATION
-===================================================== */
+/* ---------- 4. PAGE NAVIGATION ---------- */
 
 function activateSidebarPage(pageName) {
-
     navLinks.forEach(link => {
-        link.classList.toggle(
-            "active",
-            link.dataset.page === pageName
-        );
+        link.classList.toggle("active", link.dataset.page === pageName);
     });
-
 }
-
 
 function showPage(pageName) {
 
@@ -132,50 +59,18 @@ function showPage(pageName) {
         mainContent.innerHTML = dashboardHTML;
         renderDashboardStats();
         renderDashboardRevenueChart();
+        applyUserInfo();
         return;
     }
+    if (pageName === "Customers") return showCustomersPage();
+    if (pageName === "Products" || pageName === "Products & Plans") return showProductsPage();
+    if (pageName === "Subscriptions") return showSubscriptionsPage();
+    if (pageName === "Invoices") return showInvoicesPage();
+    if (pageName === "Payments") return showPaymentsPage();
+    if (pageName === "Discounts") return showDiscountsPage();
+    if (pageName === "Reports") return showReportsPage();
+    if (pageName === "Settings") return showSettingsPage();
 
-    if (pageName === "Customers") {
-        showCustomersPage();
-        return;
-    }
-
-    if (
-        pageName === "Products" ||
-        pageName === "Products & Plans"
-    ) {
-        showProductsPage();
-        return;
-    }
-
-    if (pageName === "Subscriptions") {
-        showSubscriptionsPage();
-        return;
-    }
-
-    if (pageName === "Invoices") {
-        showInvoicesPage();
-        return;
-    }
-
-    if (pageName === "Payments") {
-        showPaymentsPage();
-        return;
-    }
-
-    if (pageName === "Discounts") {
-        showDiscountsPage();
-        return;
-    }
-    if (pageName === "Reports") {
-        showReportsPage();
-        return;
-    }
-    if (pageName === "Settings") {
-        showSettingsPage();
-        return;
-    }
-    
     showPlaceholderPage(pageName);
 }
 
@@ -191,8 +86,7 @@ function showCustomersPage() {
         <header class="topbar">
             <div class="search-box">
                 <span>⌕</span>
-                <input type="text" id="customerSearch"
-                    placeholder="Search customers...">
+                <input type="text" id="customerSearch" placeholder="Search customers...">
             </div>
         </header>
 
@@ -200,21 +94,14 @@ function showCustomersPage() {
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Customers</h1>
-                <p class="subtitle">
-                    Manage and keep track of your customers.
-                </p>
+                <p class="subtitle">Manage and keep track of your customers.</p>
             </div>
-
-            <button class="date-button" id="addCustomerBtn">
-                + Add Customer
-            </button>
+            <button class="date-button" id="addCustomerBtn">+ Add Customer</button>
         </section>
 
         <section class="content-card">
             <h3>All Customers</h3>
-            <p class="subtitle">
-                View and manage your customer information.
-            </p>
+            <p class="subtitle">View and manage your customer information.</p>
 
             <table>
                 <thead>
@@ -232,53 +119,6 @@ function showCustomersPage() {
 
         <footer>© 2026 Brightloop Software</footer>
     `;
-    const chartContainer = document.getElementById("monthlyRevenueChart");
-
-    const monthlyRevenue = {};
-
-    for (let i = 5; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(1);
-        date.setMonth(date.getMonth() - i);
-
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-        monthlyRevenue[key] = {
-            label: date.toLocaleString("en-IN", { month: "short" }),
-            amount: 0
-        };
-    }
-
-    invoices.forEach(invoice => {
-        if (!invoice.issueDate) return;
-
-        const date = new Date(invoice.issueDate + "T00:00:00");
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-        if (monthlyRevenue[key]) {
-            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
-        }
-    });
-
-    const maxRevenue = Math.max(
-        1,
-        ...Object.values(monthlyRevenue).map(item => item.amount)
-    );
-
-    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
-
-        const height = (item.amount / maxRevenue) * 100;
-
-        return `
-            <div class="revenue-bar-item">
-                <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
-                <div class="revenue-bar-track">
-                    <div class="revenue-bar-fill" style="height: ${height}%"></div>
-                </div>
-                <span>${item.label}</span>
-            </div>
-        `;
-    }).join("");
 
     renderCustomers();
 
@@ -296,16 +136,10 @@ function showCustomersPage() {
 
             const index = Number(button.dataset.index);
 
-            if (button.classList.contains("edit-btn")) {
-                openCustomerModal(index);
-            }
-
-            if (button.classList.contains("delete-btn")) {
-                deleteCustomer(index);
-            }
+            if (button.classList.contains("edit-btn")) openCustomerModal(index);
+            if (button.classList.contains("delete-btn")) deleteCustomer(index);
         });
 }
-
 
 function renderCustomers(customerList = customers) {
 
@@ -315,9 +149,7 @@ function renderCustomers(customerList = customers) {
     tableBody.innerHTML = "";
 
     if (!customerList.length) {
-        tableBody.innerHTML = `
-            <tr><td colspan="5">No customers found.</td></tr>
-        `;
+        tableBody.innerHTML = `<tr><td colspan="5">No customers found.</td></tr>`;
         return;
     }
 
@@ -331,24 +163,19 @@ function renderCustomers(customerList = customers) {
             <td>${escapeHTML(customer.email)}</td>
             <td>${escapeHTML(customer.phone)}</td>
             <td>
-                <span class="status ${
-                    customer.status === "Active" ? "active" : "pending"
-                }">
+                <span class="status ${customer.status === "Active" ? "active" : "pending"}">
                     ${escapeHTML(customer.status)}
                 </span>
             </td>
             <td>
-                <button class="customer-action-btn edit-btn"
-                    data-index="${index}">Edit</button>
-                <button class="customer-action-btn delete-btn"
-                    data-index="${index}">Delete</button>
+                <button class="customer-action-btn edit-btn" data-index="${index}">Edit</button>
+                <button class="customer-action-btn delete-btn" data-index="${index}">Delete</button>
             </td>
         `;
 
         tableBody.appendChild(row);
     });
 }
-
 
 function openCustomerModal(customerIndex = null) {
 
@@ -371,29 +198,24 @@ function openCustomerModal(customerIndex = null) {
                     <h2>${isEditing ? "Edit Customer" : "Add New Customer"}</h2>
                     <p>Enter the customer information below.</p>
                 </div>
-
-                <button type="button" class="modal-close"
-                    id="closeCustomerModal">&times;</button>
+                <button type="button" class="modal-close" id="closeCustomerModal">&times;</button>
             </div>
 
             <form id="customerForm">
 
                 <div class="form-group">
                     <label>Customer Name</label>
-                    <input type="text" id="customerName"
-                        placeholder="Enter customer name" required>
+                    <input type="text" id="customerName" placeholder="Enter customer name" required>
                 </div>
 
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" id="customerEmail"
-                        placeholder="Enter email address" required>
+                    <input type="email" id="customerEmail" placeholder="Enter email address" required>
                 </div>
 
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" id="customerPhone"
-                        placeholder="Enter phone number" required>
+                    <input type="tel" id="customerPhone" placeholder="Enter phone number" required>
                 </div>
 
                 <div class="form-group">
@@ -406,9 +228,7 @@ function openCustomerModal(customerIndex = null) {
 
                 <div class="modal-actions">
                     <button type="button" id="cancelCustomer">Cancel</button>
-                    <button type="submit">
-                        ${isEditing ? "Update Customer" : "Save Customer"}
-                    </button>
+                    <button type="submit">${isEditing ? "Update Customer" : "Save Customer"}</button>
                 </div>
 
             </form>
@@ -424,22 +244,16 @@ function openCustomerModal(customerIndex = null) {
         document.getElementById("customerStatus").value = customer.status;
     }
 
-    document.getElementById("closeCustomerModal")
-        .addEventListener("click", closeCustomerModal);
-
-    document.getElementById("cancelCustomer")
-        .addEventListener("click", closeCustomerModal);
+    document.getElementById("closeCustomerModal").addEventListener("click", closeCustomerModal);
+    document.getElementById("cancelCustomer").addEventListener("click", closeCustomerModal);
 
     document.getElementById("customerForm")
-        .addEventListener("submit", event => {
-            saveCustomer(event, customerIndex);
-        });
+        .addEventListener("submit", event => saveCustomer(event, customerIndex));
 
     modal.addEventListener("click", event => {
         if (event.target === modal) closeCustomerModal();
     });
 }
-
 
 function saveCustomer(event, customerIndex = null) {
 
@@ -455,8 +269,10 @@ function saveCustomer(event, customerIndex = null) {
         return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert("Please enter a valid email address.");
+    const emailProblem = validateEmail(email);
+
+    if (emailProblem) {
+        alert(emailProblem);
         return;
     }
 
@@ -466,8 +282,7 @@ function saveCustomer(event, customerIndex = null) {
     }
 
     const emailExists = customers.some((item, index) =>
-        item.email.toLowerCase() === email.toLowerCase() &&
-        index !== customerIndex
+        item.email.toLowerCase() === email.toLowerCase() && index !== customerIndex
     );
 
     if (emailExists) {
@@ -492,20 +307,16 @@ function saveCustomer(event, customerIndex = null) {
         : "Customer added successfully!");
 }
 
-
 function closeCustomerModal() {
     document.getElementById("customerModal")?.remove();
 }
-
 
 function deleteCustomer(index) {
 
     const customer = customers[index];
     if (!customer) return;
 
-    const isUsed = subscriptions.some(
-        subscription => subscription.customerEmail === customer.email
-    );
+    const isUsed = subscriptions.some(s => s.customerEmail === customer.email);
 
     if (isUsed) {
         alert("This customer is linked to a subscription. Please keep this customer record.");
@@ -519,7 +330,6 @@ function deleteCustomer(index) {
     searchCustomers();
 }
 
-
 function searchCustomers() {
 
     const input = document.getElementById("customerSearch");
@@ -527,13 +337,11 @@ function searchCustomers() {
 
     const value = input.value.toLowerCase().trim();
 
-    const filtered = customers.filter(customer =>
+    renderCustomers(customers.filter(customer =>
         customer.name.toLowerCase().includes(value) ||
         customer.email.toLowerCase().includes(value) ||
         customer.phone.toLowerCase().includes(value)
-    );
-
-    renderCustomers(filtered);
+    ));
 }
 
 
@@ -548,8 +356,7 @@ function showProductsPage() {
         <header class="topbar">
             <div class="search-box">
                 <span>⌕</span>
-                <input type="text" id="productSearch"
-                    placeholder="Search products...">
+                <input type="text" id="productSearch" placeholder="Search products...">
             </div>
         </header>
 
@@ -557,14 +364,9 @@ function showProductsPage() {
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Products & Plans</h1>
-                <p class="subtitle">
-                    Manage your products, pricing and variants.
-                </p>
+                <p class="subtitle">Manage your products, pricing and variants.</p>
             </div>
-
-            <button class="date-button" id="addProductBtn">
-                + Add Product
-            </button>
+            <button class="date-button" id="addProductBtn">+ Add Product</button>
         </section>
 
         <section class="content-card">
@@ -605,16 +407,10 @@ function showProductsPage() {
 
             const index = Number(button.dataset.index);
 
-            if (button.classList.contains("edit-btn")) {
-                openProductModal(index);
-            }
-
-            if (button.classList.contains("delete-btn")) {
-                deleteProduct(index);
-            }
+            if (button.classList.contains("edit-btn")) openProductModal(index);
+            if (button.classList.contains("delete-btn")) deleteProduct(index);
         });
 }
-
 
 function renderProducts(productList = products) {
 
@@ -624,9 +420,7 @@ function renderProducts(productList = products) {
     tableBody.innerHTML = "";
 
     if (!productList.length) {
-        tableBody.innerHTML = `
-            <tr><td colspan="6">No products found. Add your first product!</td></tr>
-        `;
+        tableBody.innerHTML = `<tr><td colspan="6">No products found. Add your first product!</td></tr>`;
         return;
     }
 
@@ -649,17 +443,14 @@ function renderProducts(productList = products) {
             <td>${formatPrice(product.costPrice)}</td>
             <td>${variantDisplay}</td>
             <td>
-                <button class="customer-action-btn edit-btn"
-                    data-index="${index}">Edit</button>
-                <button class="customer-action-btn delete-btn"
-                    data-index="${index}">Delete</button>
+                <button class="customer-action-btn edit-btn" data-index="${index}">Edit</button>
+                <button class="customer-action-btn delete-btn" data-index="${index}">Delete</button>
             </td>
         `;
 
         tableBody.appendChild(row);
     });
 }
-
 
 function openProductModal(productIndex = null) {
 
@@ -683,17 +474,14 @@ function openProductModal(productIndex = null) {
                     <h2>${isEditing ? "Edit Product" : "Add New Product"}</h2>
                     <p>Enter product information below.</p>
                 </div>
-
-                <button type="button" class="modal-close"
-                    id="closeProductModal">&times;</button>
+                <button type="button" class="modal-close" id="closeProductModal">&times;</button>
             </div>
 
             <form id="productForm">
 
                 <div class="form-group">
                     <label>Product Name</label>
-                    <input type="text" id="productName"
-                        placeholder="e.g. Brightloop CRM" required>
+                    <input type="text" id="productName" placeholder="e.g. Brightloop CRM" required>
                 </div>
 
                 <div class="form-group">
@@ -709,20 +497,17 @@ function openProductModal(productIndex = null) {
 
                 <div class="form-group">
                     <label>Sales Price (₹)</label>
-                    <input type="number" id="salesPrice"
-                        min="0" step="0.01" required>
+                    <input type="number" id="salesPrice" min="0" step="0.01" required>
                 </div>
 
                 <div class="form-group">
                     <label>Cost Price (₹)</label>
-                    <input type="number" id="costPrice"
-                        min="0" step="0.01" required>
+                    <input type="number" id="costPrice" min="0" step="0.01" required>
                 </div>
 
                 <div class="form-group">
                     <label>Notes</label>
-                    <textarea id="productNotes" rows="3"
-                        placeholder="Additional product information"></textarea>
+                    <textarea id="productNotes" rows="3" placeholder="Additional product information"></textarea>
                 </div>
 
                 <section class="variants-section">
@@ -732,9 +517,7 @@ function openProductModal(productIndex = null) {
                             <h3>Product Variants</h3>
                             <p>Add versions with additional pricing.</p>
                         </div>
-
-                        <button type="button" class="add-variant-btn"
-                            id="addVariantBtn">+ Add Variant</button>
+                        <button type="button" class="add-variant-btn" id="addVariantBtn">+ Add Variant</button>
                     </div>
 
                     <div class="variant-label-row">
@@ -745,17 +528,13 @@ function openProductModal(productIndex = null) {
 
                     <div id="variantRows"></div>
 
-                    <p class="variant-help">
-                        Example: Premium version with ₹560 additional price.
-                    </p>
+                    <p class="variant-help">Example: Premium version with ₹560 additional price.</p>
 
                 </section>
 
                 <div class="modal-actions">
                     <button type="button" id="cancelProduct">Cancel</button>
-                    <button type="submit">
-                        ${isEditing ? "Update Product" : "Save Product"}
-                    </button>
+                    <button type="submit">${isEditing ? "Update Product" : "Save Product"}</button>
                 </div>
 
             </form>
@@ -774,25 +553,17 @@ function openProductModal(productIndex = null) {
         (product.variants || []).forEach(variant => addVariantRow(variant));
     }
 
-    document.getElementById("closeProductModal")
-        .addEventListener("click", closeProductModal);
-
-    document.getElementById("cancelProduct")
-        .addEventListener("click", closeProductModal);
-
-    document.getElementById("addVariantBtn")
-        .addEventListener("click", () => addVariantRow());
+    document.getElementById("closeProductModal").addEventListener("click", closeProductModal);
+    document.getElementById("cancelProduct").addEventListener("click", closeProductModal);
+    document.getElementById("addVariantBtn").addEventListener("click", () => addVariantRow());
 
     document.getElementById("productForm")
-        .addEventListener("submit", event => {
-            saveProduct(event, productIndex);
-        });
+        .addEventListener("submit", event => saveProduct(event, productIndex));
 
     modal.addEventListener("click", event => {
         if (event.target === modal) closeProductModal();
     });
 }
-
 
 function addVariantRow(variant = null) {
 
@@ -803,24 +574,19 @@ function addVariantRow(variant = null) {
     row.className = "variant-row";
 
     row.innerHTML = `
-        <input type="text" class="variant-name"
-            placeholder="e.g. Premium"
+        <input type="text" class="variant-name" placeholder="e.g. Premium"
             value="${variant ? escapeHTML(variant.name) : ""}">
 
-        <input type="number" class="variant-price"
-            min="0" step="0.01" placeholder="e.g. 560"
+        <input type="number" class="variant-price" min="0" step="0.01" placeholder="e.g. 560"
             value="${variant ? Number(variant.priceAddon) : ""}">
 
-        <button type="button" class="remove-variant-btn"
-            title="Remove variant">&times;</button>
+        <button type="button" class="remove-variant-btn" title="Remove variant">&times;</button>
     `;
 
-    row.querySelector(".remove-variant-btn")
-        .addEventListener("click", () => row.remove());
+    row.querySelector(".remove-variant-btn").addEventListener("click", () => row.remove());
 
     variantRows.appendChild(row);
 }
-
 
 function saveProduct(event, productIndex = null) {
 
@@ -837,19 +603,13 @@ function saveProduct(event, productIndex = null) {
         return;
     }
 
-    if (
-        !Number.isFinite(salesPrice) ||
-        !Number.isFinite(costPrice) ||
-        salesPrice < 0 ||
-        costPrice < 0
-    ) {
+    if (!Number.isFinite(salesPrice) || !Number.isFinite(costPrice) || salesPrice < 0 || costPrice < 0) {
         alert("Please enter valid prices.");
         return;
     }
 
     const duplicate = products.some((product, index) =>
-        product.name.toLowerCase() === name.toLowerCase() &&
-        index !== productIndex
+        product.name.toLowerCase() === name.toLowerCase() && index !== productIndex
     );
 
     if (duplicate) {
@@ -860,47 +620,35 @@ function saveProduct(event, productIndex = null) {
     const variants = [];
     const variantNames = new Set();
 
-    document.querySelectorAll("#variantRows .variant-row")
-        .forEach(row => {
+    document.querySelectorAll("#variantRows .variant-row").forEach(row => {
 
-            const variantName = row.querySelector(".variant-name").value.trim();
-            const priceValue = row.querySelector(".variant-price").value.trim();
+        const variantName = row.querySelector(".variant-name").value.trim();
+        const priceValue = row.querySelector(".variant-price").value.trim();
 
-            if (!variantName && !priceValue) return;
+        if (!variantName && !priceValue) return;
 
-            if (!variantName || priceValue === "") {
-                variants.push({ invalid: true });
-                return;
-            }
+        if (!variantName || priceValue === "") {
+            variants.push({ invalid: true });
+            return;
+        }
 
-            const priceAddon = Number(priceValue);
+        const priceAddon = Number(priceValue);
 
-            if (
-                !Number.isFinite(priceAddon) ||
-                priceAddon < 0 ||
-                variantNames.has(variantName.toLowerCase())
-            ) {
-                variants.push({ invalid: true });
-                return;
-            }
+        if (!Number.isFinite(priceAddon) || priceAddon < 0 || variantNames.has(variantName.toLowerCase())) {
+            variants.push({ invalid: true });
+            return;
+        }
 
-            variantNames.add(variantName.toLowerCase());
-            variants.push({ name: variantName, priceAddon });
-        });
+        variantNames.add(variantName.toLowerCase());
+        variants.push({ name: variantName, priceAddon });
+    });
 
     if (variants.some(v => v.invalid)) {
         alert("Check your variants. Names must be unique and prices valid.");
         return;
     }
 
-    const productData = {
-        name,
-        type,
-        salesPrice,
-        costPrice,
-        notes,
-        variants
-    };
+    const productData = { name, type, salesPrice, costPrice, notes, variants };
 
     if (productIndex !== null) {
         products[productIndex] = productData;
@@ -917,20 +665,16 @@ function saveProduct(event, productIndex = null) {
         : "Product added successfully!");
 }
 
-
 function closeProductModal() {
     document.getElementById("productModal")?.remove();
 }
-
 
 function deleteProduct(index) {
 
     const product = products[index];
     if (!product) return;
 
-    const isUsed = subscriptions.some(
-        subscription => subscription.productName === product.name
-    );
+    const isUsed = subscriptions.some(s => s.productName === product.name);
 
     if (isUsed) {
         alert("This product is linked to a subscription. Please keep it in your catalogue.");
@@ -944,7 +688,6 @@ function deleteProduct(index) {
     searchProducts();
 }
 
-
 function searchProducts() {
 
     const input = document.getElementById("productSearch");
@@ -952,16 +695,14 @@ function searchProducts() {
 
     const value = input.value.toLowerCase().trim();
 
-    const filtered = products.filter(product =>
+    renderProducts(products.filter(product =>
         product.name.toLowerCase().includes(value) ||
         product.type.toLowerCase().includes(value) ||
-        (product.variants || []).some(variant =>
-            variant.name.toLowerCase().includes(value)
-        )
-    );
-
-    renderProducts(filtered);
+        (product.variants || []).some(v => v.name.toLowerCase().includes(value))
+    ));
 }
+
+
 /* =====================================================
    7. SUBSCRIPTIONS MODULE
 ===================================================== */
@@ -973,8 +714,7 @@ function showSubscriptionsPage() {
         <header class="topbar">
             <div class="search-box">
                 <span>⌕</span>
-                <input type="text" id="subscriptionSearch"
-                    placeholder="Search subscriptions...">
+                <input type="text" id="subscriptionSearch" placeholder="Search subscriptions...">
             </div>
         </header>
 
@@ -982,14 +722,9 @@ function showSubscriptionsPage() {
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Subscriptions</h1>
-                <p class="subtitle">
-                    Create and manage customer subscriptions.
-                </p>
+                <p class="subtitle">Create and manage customer subscriptions.</p>
             </div>
-
-            <button class="date-button" id="addSubscriptionBtn">
-                + New Subscription
-            </button>
+            <button class="date-button" id="addSubscriptionBtn">+ New Subscription</button>
         </section>
 
         <section class="stats-grid subscription-stats">
@@ -1023,9 +758,7 @@ function showSubscriptionsPage() {
         <section class="content-card subscriptions-section">
 
             <h3>All Subscriptions</h3>
-            <p class="subtitle">
-                Track customer plans, billing and subscription stages.
-            </p>
+            <p class="subtitle">Track customer plans, billing and subscription stages.</p>
 
             <table>
                 <thead>
@@ -1041,7 +774,6 @@ function showSubscriptionsPage() {
                         <th>Actions</th>
                     </tr>
                 </thead>
-
                 <tbody id="subscriptionTableBody"></tbody>
             </table>
 
@@ -1066,20 +798,11 @@ function showSubscriptionsPage() {
 
             const index = Number(button.dataset.index);
 
-            if (button.classList.contains("edit-btn")) {
-                openSubscriptionModal(index);
-            }
-
-            if (button.classList.contains("delete-btn")) {
-                deleteSubscription(index);
-            }
-
-            if (button.classList.contains("generate-invoice-btn")) {
-                generateInvoice(index);
-            }
+            if (button.classList.contains("edit-btn")) openSubscriptionModal(index);
+            if (button.classList.contains("delete-btn")) deleteSubscription(index);
+            if (button.classList.contains("generate-invoice-btn")) generateInvoice(index);
         });
 }
-
 
 function renderSubscriptions(subscriptionList = subscriptions) {
 
@@ -1090,11 +813,7 @@ function renderSubscriptions(subscriptionList = subscriptions) {
 
     if (!subscriptionList.length) {
         tableBody.innerHTML = `
-            <tr>
-                <td colspan="9">
-                    No subscriptions found. Create your first subscription!
-                </td>
-            </tr>
+            <tr><td colspan="9">No subscriptions found. Create your first subscription!</td></tr>
         `;
         updateSubscriptionStats();
         return;
@@ -1103,8 +822,7 @@ function renderSubscriptions(subscriptionList = subscriptions) {
     subscriptionList.forEach(subscription => {
 
         const index = subscriptions.indexOf(subscription);
-        const statusClass = subscription.status.toLowerCase()
-            .replace(/\s+/g, "-");
+        const statusClass = subscription.status.toLowerCase().replace(/\s+/g, "-");
 
         const row = document.createElement("tr");
 
@@ -1122,19 +840,12 @@ function renderSubscriptions(subscriptionList = subscriptions) {
             <td>${formatPrice(subscription.totalAmount)}</td>
             <td>${formatDate(subscription.nextBilling)}</td>
             <td>
-                <span class="status ${statusClass}">
-                    ${escapeHTML(subscription.status)}
-                </span>
+                <span class="status ${statusClass}">${escapeHTML(subscription.status)}</span>
             </td>
             <td>
-                <button class="customer-action-btn edit-btn"
-                    data-index="${index}">Edit</button>
-
-                <button class="customer-action-btn generate-invoice-btn"
-                    data-index="${index}">Invoice</button>
-
-                <button class="customer-action-btn delete-btn"
-                    data-index="${index}">Delete</button>
+                <button class="customer-action-btn edit-btn" data-index="${index}">Edit</button>
+                <button class="customer-action-btn generate-invoice-btn" data-index="${index}">Invoice</button>
+                <button class="customer-action-btn delete-btn" data-index="${index}">Delete</button>
             </td>
         `;
 
@@ -1144,15 +855,10 @@ function renderSubscriptions(subscriptionList = subscriptions) {
     updateSubscriptionStats();
 }
 
-
 function updateSubscriptionStats() {
 
     const total = subscriptions.length;
-
-    const active = subscriptions.filter(
-        item => item.status === "Active"
-    ).length;
-
+    const active = subscriptions.filter(item => item.status === "Active").length;
     const pending = subscriptions.filter(
         item => ["Draft", "Quotation", "Confirmed"].includes(item.status)
     ).length;
@@ -1173,13 +879,8 @@ function updateSubscriptionStats() {
     document.getElementById("totalSubscriptions").textContent = total;
     document.getElementById("activeSubscriptions").textContent = active;
     document.getElementById("pendingSubscriptions").textContent = pending;
-
-    document.getElementById("monthlySubscriptionValue").textContent =
-        formatPrice(monthlyValue);
+    document.getElementById("monthlySubscriptionValue").textContent = formatPrice(monthlyValue);
 }
-
-
-/* ---------- SUBSCRIPTION FORM ---------- */
 
 function openSubscriptionModal(subscriptionIndex = null) {
 
@@ -1196,28 +897,20 @@ function openSubscriptionModal(subscriptionIndex = null) {
     }
 
     const isEditing = subscriptionIndex !== null;
-
-    const subscription = isEditing
-        ? subscriptions[subscriptionIndex]
-        : null;
+    const subscription = isEditing ? subscriptions[subscriptionIndex] : null;
 
     if (isEditing && !subscription) return;
 
     const modal = document.createElement("div");
-
     modal.id = "subscriptionModal";
     modal.className = "customer-modal-overlay";
 
     const customerOptions = customers.map(customer => `
-        <option value="${escapeHTML(customer.email)}">
-            ${escapeHTML(customer.name)}
-        </option>
+        <option value="${escapeHTML(customer.email)}">${escapeHTML(customer.name)}</option>
     `).join("");
 
     const productOptions = products.map((product, index) => `
-        <option value="${index}">
-            ${escapeHTML(product.name)}
-        </option>
+        <option value="${index}">${escapeHTML(product.name)}</option>
     `).join("");
 
     modal.innerHTML = `
@@ -1226,14 +919,10 @@ function openSubscriptionModal(subscriptionIndex = null) {
 
             <div class="modal-header">
                 <div>
-                    <h2>
-                        ${isEditing ? "Edit Subscription" : "Create Subscription"}
-                    </h2>
+                    <h2>${isEditing ? "Edit Subscription" : "Create Subscription"}</h2>
                     <p>Configure the customer's subscription details.</p>
                 </div>
-
-                <button type="button" class="modal-close"
-                    id="closeSubscriptionModal">&times;</button>
+                <button type="button" class="modal-close" id="closeSubscriptionModal">&times;</button>
             </div>
 
             <form id="subscriptionForm">
@@ -1263,8 +952,7 @@ function openSubscriptionModal(subscriptionIndex = null) {
 
                 <div class="form-group">
                     <label>Quantity</label>
-                    <input type="number" id="subscriptionQuantity"
-                        min="1" value="1" required>
+                    <input type="number" id="subscriptionQuantity" min="1" value="1" required>
                 </div>
 
                 <div class="form-group">
@@ -1298,27 +986,18 @@ function openSubscriptionModal(subscriptionIndex = null) {
                     </select>
                 </div>
 
-                <div id="paymentInvoiceSummary" class="payment-invoice-summary"></div>
-
                 <div class="form-group">
-                    <label>Outstanding Balance</label>
-                    <input type="text" id="paymentBalance"
-                        readonly value="₹0.00">
+                    <label>Estimated Amount</label>
+                    <input type="text" id="subscriptionAmountPreview" readonly value="₹0.00">
                 </div>
 
                 <p class="variant-help">
-                    The total is calculated from the product price,
-                    selected variant and quantity.
+                    The total is calculated from the product price, selected variant and quantity.
                 </p>
 
                 <div class="modal-actions">
-                    <button type="button" id="cancelSubscription">
-                        Cancel
-                    </button>
-
-                    <button type="submit">
-                        ${isEditing ? "Update Subscription" : "Save Subscription"}
-                    </button>
+                    <button type="button" id="cancelSubscription">Cancel</button>
+                    <button type="submit">${isEditing ? "Update Subscription" : "Save Subscription"}</button>
                 </div>
 
             </form>
@@ -1340,17 +1019,13 @@ function openSubscriptionModal(subscriptionIndex = null) {
 
         const product = products[Number(productSelect.value)];
 
-        variantSelect.innerHTML =
-            `<option value="">Default product</option>`;
+        variantSelect.innerHTML = `<option value="">Default product</option>`;
 
         if (product) {
             (product.variants || []).forEach(variant => {
-
                 const option = document.createElement("option");
                 option.value = variant.name;
-                option.textContent =
-                    `${variant.name} (+${formatPrice(variant.priceAddon)})`;
-
+                option.textContent = `${variant.name} (+${formatPrice(variant.priceAddon)})`;
                 variantSelect.appendChild(option);
             });
         }
@@ -1361,117 +1036,71 @@ function openSubscriptionModal(subscriptionIndex = null) {
 
     function updateSubscriptionAmount() {
 
+        const preview = document.getElementById("subscriptionAmountPreview");
         const product = products[Number(productSelect.value)];
 
         if (!product) {
-            document.getElementById("subscriptionAmountPreview").value =
-                formatPrice(0);
+            preview.value = formatPrice(0);
             return;
         }
 
-        const variant = (product.variants || []).find(
-            item => item.name === variantSelect.value
-        );
+        const variant = (product.variants || []).find(item => item.name === variantSelect.value);
 
         const basePrice = Number(product.salesPrice);
         const addon = variant ? Number(variant.priceAddon) : 0;
-
         const quantity = Math.max(
             1,
             Number(document.getElementById("subscriptionQuantity").value) || 1
         );
 
-        document.getElementById("subscriptionAmountPreview").value =
-            formatPrice((basePrice + addon) * quantity);
+        preview.value = formatPrice((basePrice + addon) * quantity);
     }
 
-    productSelect.addEventListener("change", () => {
-        updateVariantOptions();
-    });
-
+    productSelect.addEventListener("change", () => updateVariantOptions());
     variantSelect.addEventListener("change", updateSubscriptionAmount);
-
-    document.getElementById("subscriptionQuantity")
-        .addEventListener("input", updateSubscriptionAmount);
+    document.getElementById("subscriptionQuantity").addEventListener("input", updateSubscriptionAmount);
 
     if (isEditing) {
 
-        document.getElementById("subscriptionQuantity").value =
-            subscription.quantity;
-
-        document.getElementById("subscriptionFrequency").value =
-            subscription.frequency;
-
-        document.getElementById("subscriptionStart").value =
-            subscription.startDate;
-
-        document.getElementById("subscriptionEnd").value =
-            subscription.endDate || "";
-
-        document.getElementById("subscriptionStatus").value =
-            subscription.status;
+        document.getElementById("subscriptionQuantity").value = subscription.quantity;
+        document.getElementById("subscriptionFrequency").value = subscription.frequency;
+        document.getElementById("subscriptionStart").value = subscription.startDate;
+        document.getElementById("subscriptionEnd").value = subscription.endDate || "";
+        document.getElementById("subscriptionStatus").value = subscription.status;
 
         updateVariantOptions(subscription.variantName || "");
 
     } else {
 
-        document.getElementById("subscriptionStart").value =
-            getLocalToday();
-
+        document.getElementById("subscriptionStart").value = getLocalToday();
         updateVariantOptions();
     }
 
-    document.getElementById("closeSubscriptionModal")
-        .addEventListener("click", closeSubscriptionModal);
-
-    document.getElementById("cancelSubscription")
-        .addEventListener("click", closeSubscriptionModal);
+    document.getElementById("closeSubscriptionModal").addEventListener("click", closeSubscriptionModal);
+    document.getElementById("cancelSubscription").addEventListener("click", closeSubscriptionModal);
 
     document.getElementById("subscriptionForm")
-        .addEventListener("submit", event => {
-            saveSubscription(event, subscriptionIndex);
-        });
+        .addEventListener("submit", event => saveSubscription(event, subscriptionIndex));
 
     modal.addEventListener("click", event => {
         if (event.target === modal) closeSubscriptionModal();
     });
 }
 
-
 function saveSubscription(event, subscriptionIndex = null) {
 
     event.preventDefault();
 
-    const customerEmail =
-        document.getElementById("subscriptionCustomer").value;
+    const customerEmail = document.getElementById("subscriptionCustomer").value;
+    const productIndex = Number(document.getElementById("subscriptionProduct").value);
+    const variantName = document.getElementById("subscriptionVariant").value;
+    const quantity = Number(document.getElementById("subscriptionQuantity").value);
+    const frequency = document.getElementById("subscriptionFrequency").value;
+    const startDate = document.getElementById("subscriptionStart").value;
+    const endDate = document.getElementById("subscriptionEnd").value;
+    const status = document.getElementById("subscriptionStatus").value;
 
-    const productIndex = Number(
-        document.getElementById("subscriptionProduct").value
-    );
-
-    const variantName =
-        document.getElementById("subscriptionVariant").value;
-
-    const quantity = Number(
-        document.getElementById("subscriptionQuantity").value
-    );
-
-    const frequency =
-        document.getElementById("subscriptionFrequency").value;
-
-    const startDate =
-        document.getElementById("subscriptionStart").value;
-
-    const endDate =
-        document.getElementById("subscriptionEnd").value;
-
-    const status =
-        document.getElementById("subscriptionStatus").value;
-
-    const customer = customers.find(
-        item => item.email === customerEmail
-    );
-
+    const customer = customers.find(item => item.email === customerEmail);
     const product = products[productIndex];
 
     if (!customer || !product) {
@@ -1494,51 +1123,29 @@ function saveSubscription(event, subscriptionIndex = null) {
         return;
     }
 
-    const variant = (product.variants || []).find(
-        item => item.name === variantName
-    );
+    const variant = (product.variants || []).find(item => item.name === variantName);
 
-    const unitPrice =
-        Number(product.salesPrice) +
-        (variant ? Number(variant.priceAddon) : 0);
-
+    const unitPrice = Number(product.salesPrice) + (variant ? Number(variant.priceAddon) : 0);
     const totalAmount = unitPrice * quantity;
 
-    const existing = subscriptionIndex !== null
-        ? subscriptions[subscriptionIndex]
-        : null;
+    const existing = subscriptionIndex !== null ? subscriptions[subscriptionIndex] : null;
 
     const subscriptionData = {
-
-        id: existing
-            ? existing.id
-            : "SUB-" + Date.now().toString().slice(-8),
-
+        id: existing ? existing.id : "SUB-" + Date.now().toString().slice(-8),
         customerName: customer.name,
         customerEmail: customer.email,
-
         productName: product.name,
         productIndex,
-
         variantName,
         quantity,
         frequency,
-
         unitPrice,
         totalAmount,
-
         startDate,
         endDate,
-
-        nextBilling: existing
-            ? existing.nextBilling
-            : calculateNextBilling(startDate, frequency),
-
+        nextBilling: existing ? existing.nextBilling : calculateNextBilling(startDate, frequency),
         status,
-
-        createdAt: existing
-            ? existing.createdAt
-            : new Date().toISOString()
+        createdAt: existing ? existing.createdAt : new Date().toISOString()
     };
 
     if (subscriptionIndex !== null) {
@@ -1556,20 +1163,16 @@ function saveSubscription(event, subscriptionIndex = null) {
         : "Subscription created successfully!");
 }
 
-
 function closeSubscriptionModal() {
     document.getElementById("subscriptionModal")?.remove();
 }
-
 
 function deleteSubscription(index) {
 
     const subscription = subscriptions[index];
     if (!subscription) return;
 
-    const hasInvoices = invoices.some(
-        invoice => invoice.subscriptionId === subscription.id
-    );
+    const hasInvoices = invoices.some(invoice => invoice.subscriptionId === subscription.id);
 
     if (hasInvoices) {
         alert("This subscription has invoices linked to it. Keep the subscription record.");
@@ -1579,11 +1182,9 @@ function deleteSubscription(index) {
     if (!confirm(`Delete subscription ${subscription.id}?`)) return;
 
     subscriptions.splice(index, 1);
-
     saveSubscriptionsToStorage();
     searchSubscriptions();
 }
-
 
 function searchSubscriptions() {
 
@@ -1592,15 +1193,15 @@ function searchSubscriptions() {
 
     const value = input.value.toLowerCase().trim();
 
-    const filtered = subscriptions.filter(subscription =>
+    renderSubscriptions(subscriptions.filter(subscription =>
         subscription.id.toLowerCase().includes(value) ||
         subscription.customerName.toLowerCase().includes(value) ||
         subscription.productName.toLowerCase().includes(value) ||
         subscription.status.toLowerCase().includes(value)
-    );
-
-    renderSubscriptions(filtered);
+    ));
 }
+
+
 /* =====================================================
    8. INVOICES MODULE
 ===================================================== */
@@ -1612,8 +1213,7 @@ function showInvoicesPage() {
         <header class="topbar">
             <div class="search-box">
                 <span>⌕</span>
-                <input type="text" id="invoiceSearch"
-                    placeholder="Search invoices...">
+                <input type="text" id="invoiceSearch" placeholder="Search invoices...">
             </div>
         </header>
 
@@ -1621,14 +1221,9 @@ function showInvoicesPage() {
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Invoices</h1>
-                <p class="subtitle">
-                    Create invoices and track customer payments.
-                </p>
+                <p class="subtitle">Create invoices and track customer payments.</p>
             </div>
-
-            <button class="date-button" id="refreshInvoicesBtn">
-                ↻ Refresh
-            </button>
+            <button class="date-button" id="refreshInvoicesBtn">↻ Refresh</button>
         </section>
 
         <section class="stats-grid">
@@ -1662,10 +1257,7 @@ function showInvoicesPage() {
         <section class="content-card">
 
             <h3>All Invoices</h3>
-
-            <p class="subtitle">
-                Confirm invoices and record full or partial payments.
-            </p>
+            <p class="subtitle">Confirm invoices and record full or partial payments.</p>
 
             <table>
                 <thead>
@@ -1682,7 +1274,6 @@ function showInvoicesPage() {
                         <th>Actions</th>
                     </tr>
                 </thead>
-
                 <tbody id="invoiceTableBody"></tbody>
             </table>
 
@@ -1693,11 +1284,8 @@ function showInvoicesPage() {
 
     renderInvoices();
 
-    document.getElementById("invoiceSearch")
-        .addEventListener("input", searchInvoices);
-
-    document.getElementById("refreshInvoicesBtn")
-        .addEventListener("click", () => renderInvoices());
+    document.getElementById("invoiceSearch").addEventListener("input", searchInvoices);
+    document.getElementById("refreshInvoicesBtn").addEventListener("click", () => renderInvoices());
 
     document.getElementById("invoiceTableBody")
         .addEventListener("click", event => {
@@ -1707,20 +1295,11 @@ function showInvoicesPage() {
 
             const index = Number(button.dataset.index);
 
-            if (button.classList.contains("confirm-invoice-btn")) {
-                updateInvoiceStatus(index, "Confirmed");
-            }
-
-            if (button.classList.contains("pay-invoice-btn")) {
-                openPaymentModal(index);
-            }
-
-            if (button.classList.contains("delete-invoice-btn")) {
-                deleteInvoice(index);
-            }
+            if (button.classList.contains("confirm-invoice-btn")) updateInvoiceStatus(index, "Confirmed");
+            if (button.classList.contains("pay-invoice-btn")) openPaymentModal(index);
+            if (button.classList.contains("delete-invoice-btn")) deleteInvoice(index);
         });
 }
-
 
 function renderInvoices(invoiceList = invoices) {
 
@@ -1731,13 +1310,8 @@ function renderInvoices(invoiceList = invoices) {
 
     if (!invoiceList.length) {
         tableBody.innerHTML = `
-            <tr>
-                <td colspan="10">
-                    No invoices found. Generate an invoice from a subscription.
-                </td>
-            </tr>
+            <tr><td colspan="10">No invoices found. Generate an invoice from a subscription.</td></tr>
         `;
-
         updateInvoiceStats();
         return;
     }
@@ -1748,35 +1322,24 @@ function renderInvoices(invoiceList = invoices) {
 
         const paid = Number(invoice.amountPaid || 0);
         const balance = Math.max(0, Number(invoice.amount) - paid);
-
-        const statusClass = invoice.status.toLowerCase()
-            .replace(/\s+/g, "-");
+        const statusClass = invoice.status.toLowerCase().replace(/\s+/g, "-");
 
         let actionButtons = "";
 
         if (invoice.status === "Draft") {
             actionButtons = `
-                <button class="customer-action-btn confirm-invoice-btn"
-                    data-index="${index}">Confirm</button>
+                <button class="customer-action-btn confirm-invoice-btn" data-index="${index}">Confirm</button>
             `;
         }
 
-        if (
-            invoice.status === "Confirmed" ||
-            invoice.status === "Partially Paid"
-        ) {
+        if (invoice.status === "Confirmed" || invoice.status === "Partially Paid") {
             actionButtons = `
-                <button class="customer-action-btn pay-invoice-btn"
-                    data-index="${index}">
-                    Record Payment
-                </button>
+                <button class="customer-action-btn pay-invoice-btn" data-index="${index}">Record Payment</button>
             `;
         }
 
         if (invoice.status === "Paid") {
-            actionButtons = `
-                <span class="variant-count">Completed</span>
-            `;
+            actionButtons = `<span class="variant-count">Completed</span>`;
         }
 
         const row = document.createElement("tr");
@@ -1786,57 +1349,43 @@ function renderInvoices(invoiceList = invoices) {
 
             <td>
                 ${escapeHTML(invoice.customerName)}
-                <small class="variant-preview">
-                    ${escapeHTML(invoice.customerEmail)}
-                </small>
+                <small class="variant-preview">${escapeHTML(invoice.customerEmail)}</small>
             </td>
 
             <td>
                 ${escapeHTML(invoice.subscriptionId)}
-                <small class="variant-preview">
-                    ${escapeHTML(invoice.productName)}
-                </small>
+                <small class="variant-preview">${escapeHTML(invoice.productName)}</small>
             </td>
 
             <td>${formatDate(invoice.issueDate)}</td>
             <td>${formatDate(invoice.dueDate)}</td>
+
             <td>
-            <div class="invoice-amount-details">
-                <span class="invoice-subtotal">
-                    ${formatPrice(invoice.subtotal ?? invoice.amount)}
-                </span>
+                <div class="invoice-amount-details">
+                    <span class="invoice-subtotal">${formatPrice(invoice.subtotal ?? invoice.amount)}</span>
 
-                ${
-                    Number(invoice.discountAmount || 0) > 0
-                        ? `
-                            <small class="invoice-discount">
-                                ${escapeHTML(invoice.discountName || "Discount")}
-                                (-${formatPrice(invoice.discountAmount)})
-                            </small>
-                        `
-                        : ""
-                }
+                    ${Number(invoice.discountAmount || 0) > 0
+                        ? `<small class="invoice-discount">
+                               ${escapeHTML(invoice.discountName || "Discount")}
+                               (-${formatPrice(invoice.discountAmount)})
+                           </small>`
+                        : ""}
 
-                <strong class="invoice-final-amount">
-                    ${formatPrice(invoice.amount)}
-                </strong>
-            </div>
-        </td>
+                    <strong class="invoice-final-amount">${formatPrice(invoice.amount)}</strong>
+                </div>
+            </td>
+
             <td>${formatPrice(paid)}</td>
             <td>${formatPrice(balance)}</td>
 
             <td>
-                <span class="status ${statusClass}">
-                    ${escapeHTML(invoice.status)}
-                </span>
+                <span class="status ${statusClass}">${escapeHTML(invoice.status)}</span>
             </td>
 
             <td>
                 <div class="invoice-actions">
                     ${actionButtons}
-
-                    <button class="customer-action-btn delete-invoice-btn"
-                        data-index="${index}">Delete</button>
+                    <button class="customer-action-btn delete-invoice-btn" data-index="${index}">Delete</button>
                 </div>
             </td>
         `;
@@ -1847,41 +1396,22 @@ function renderInvoices(invoiceList = invoices) {
     updateInvoiceStats();
 }
 
-
 function updateInvoiceStats() {
 
     const total = invoices.length;
-
-    const draft = invoices.filter(
-        invoice => invoice.status === "Draft"
-    ).length;
-
-    const paid = invoices.filter(
-        invoice => invoice.status === "Paid"
-    ).length;
+    const draft = invoices.filter(invoice => invoice.status === "Draft").length;
+    const paid = invoices.filter(invoice => invoice.status === "Paid").length;
 
     const outstanding = invoices
-        .filter(invoice =>
-            ["Confirmed", "Partially Paid"].includes(invoice.status)
-        )
-        .reduce((sum, invoice) => {
-
-            const remaining =
-                Number(invoice.amount) - Number(invoice.amountPaid || 0);
-
-            return sum + Math.max(0, remaining);
-        }, 0);
+        .filter(invoice => ["Confirmed", "Partially Paid"].includes(invoice.status))
+        .reduce((sum, invoice) =>
+            sum + Math.max(0, Number(invoice.amount) - Number(invoice.amountPaid || 0)), 0);
 
     document.getElementById("totalInvoices").textContent = total;
     document.getElementById("draftInvoices").textContent = draft;
     document.getElementById("paidInvoices").textContent = paid;
-
-    document.getElementById("outstandingInvoices").textContent =
-        formatPrice(outstanding);
+    document.getElementById("outstandingInvoices").textContent = formatPrice(outstanding);
 }
-
-
-/* ---------- GENERATE INVOICE ---------- */
 
 function generateInvoice(subscriptionIndex) {
 
@@ -1900,8 +1430,7 @@ function generateInvoice(subscriptionIndex) {
     const billingDate = subscription.nextBilling || getLocalToday();
 
     const duplicate = invoices.some(invoice =>
-        invoice.subscriptionId === subscription.id &&
-        invoice.billingDate === billingDate
+        invoice.subscriptionId === subscription.id && invoice.billingDate === billingDate
     );
 
     if (duplicate) {
@@ -1909,85 +1438,50 @@ function generateInvoice(subscriptionIndex) {
         return;
     }
 
-    const customer = customers.find(
-        item => item.email === subscription.customerEmail
-    );
+    const customer = customers.find(item => item.email === subscription.customerEmail);
 
     if (!customer) {
         alert("The customer linked to this subscription could not be found.");
         return;
     }
-    // Calculate applicable discount
-    const appliedDiscount = calculateApplicableDiscount(
-        subscription,
-        billingDate
-    );
+
+    const appliedDiscount = calculateApplicableDiscount(subscription, billingDate);
 
     const subtotal = Number(subscription.totalAmount);
-
-    const discountAmount = appliedDiscount
-        ? appliedDiscount.discountAmount
-        : 0;
-
+    const discountAmount = appliedDiscount ? appliedDiscount.discountAmount : 0;
     const finalAmount = subtotal - discountAmount;
+
     const invoice = {
-
         id: "INV-" + Date.now().toString().slice(-8),
-
         subscriptionId: subscription.id,
-
         customerName: subscription.customerName,
         customerEmail: subscription.customerEmail,
-
         productName: subscription.productName,
         variantName: subscription.variantName || "",
-
         quantity: subscription.quantity,
-
         billingDate,
-
         issueDate: getLocalToday(),
-
         dueDate: addDaysToDate(getLocalToday(), 7),
-
-        subtotal: subtotal,
-
-        discountId: appliedDiscount
-            ? appliedDiscount.discount.id
-            : null,
-
-        discountName: appliedDiscount
-            ? appliedDiscount.discount.name
-            : null,
-
-        discountAmount: discountAmount,
-
+        subtotal,
+        discountId: appliedDiscount ? appliedDiscount.discount.id : null,
+        discountName: appliedDiscount ? appliedDiscount.discount.name : null,
+        discountAmount,
         amount: finalAmount,
-
         amountPaid: 0,
-
         status: "Draft",
-
         createdAt: new Date().toISOString()
     };
 
     invoices.push(invoice);
 
-    // Update discount usage count
     if (appliedDiscount) {
-        appliedDiscount.discount.usedCount =
-            Number(appliedDiscount.discount.usedCount || 0) + 1;
-
+        appliedDiscount.discount.usedCount = Number(appliedDiscount.discount.usedCount || 0) + 1;
         saveDiscountsToStorage();
     }
 
     saveInvoicesToStorage();
 
-    subscription.nextBilling = calculateNextBilling(
-        billingDate,
-        subscription.frequency
-    );
-
+    subscription.nextBilling = calculateNextBilling(billingDate, subscription.frequency);
     saveSubscriptionsToStorage();
 
     alert(`Invoice ${invoice.id} generated successfully!`);
@@ -1996,17 +1490,12 @@ function generateInvoice(subscriptionIndex) {
     showInvoicesPage();
 }
 
-
-/* ---------- UPDATE INVOICE STATUS ---------- */
-
 function updateInvoiceStatus(index, newStatus) {
 
     const invoice = invoices[index];
     if (!invoice) return;
 
-    if (newStatus !== "Confirmed" || invoice.status !== "Draft") {
-        return;
-    }
+    if (newStatus !== "Confirmed" || invoice.status !== "Draft") return;
 
     if (!confirm(`Confirm invoice ${invoice.id}?`)) return;
 
@@ -2017,19 +1506,12 @@ function updateInvoiceStatus(index, newStatus) {
     renderInvoices();
 }
 
-
-/* ---------- DELETE INVOICE ---------- */
-
 function deleteInvoice(index) {
 
     const invoice = invoices[index];
     if (!invoice) return;
 
-    const hasPayments = payments.some(
-        payment => payment.invoiceId === invoice.id
-    );
-
-    if (hasPayments) {
+    if (payments.some(payment => payment.invoiceId === invoice.id)) {
         alert("This invoice has payment records. Delete its payments first.");
         return;
     }
@@ -2041,14 +1523,20 @@ function deleteInvoice(index) {
 
     if (!confirm(`Delete invoice ${invoice.id}?`)) return;
 
+    // Give the discount use back so it is not lost
+    if (invoice.discountId) {
+        const discount = discounts.find(d => d.id === invoice.discountId);
+        if (discount) {
+            discount.usedCount = Math.max(0, Number(discount.usedCount || 0) - 1);
+            saveDiscountsToStorage();
+        }
+    }
+
     invoices.splice(index, 1);
 
     saveInvoicesToStorage();
     renderInvoices();
 }
-
-
-/* ---------- SEARCH INVOICES ---------- */
 
 function searchInvoices() {
 
@@ -2057,17 +1545,14 @@ function searchInvoices() {
 
     const value = input.value.toLowerCase().trim();
 
-    const filtered = invoices.filter(invoice =>
-
+    renderInvoices(invoices.filter(invoice =>
         invoice.id.toLowerCase().includes(value) ||
         invoice.customerName.toLowerCase().includes(value) ||
         invoice.customerEmail.toLowerCase().includes(value) ||
         invoice.subscriptionId.toLowerCase().includes(value) ||
         invoice.productName.toLowerCase().includes(value) ||
         invoice.status.toLowerCase().includes(value)
-    );
-
-    renderInvoices(filtered);
+    ));
 }
 
 
@@ -2082,25 +1567,17 @@ function showPaymentsPage() {
         <header class="topbar">
             <div class="search-box">
                 <span>⌕</span>
-                <input type="text" id="paymentSearch"
-                    placeholder="Search payments...">
+                <input type="text" id="paymentSearch" placeholder="Search payments...">
             </div>
         </header>
 
         <section class="welcome-section">
-
             <div>
                 <p class="eyebrow">WORKSPACE</p>
                 <h1>Payments</h1>
-                <p class="subtitle">
-                    Record and manage customer payments.
-                </p>
+                <p class="subtitle">Record and manage customer payments.</p>
             </div>
-
-            <button class="date-button" id="addPaymentBtn">
-                + Record Payment
-            </button>
-
+            <button class="date-button" id="addPaymentBtn">+ Record Payment</button>
         </section>
 
         <section class="stats-grid">
@@ -2134,10 +1611,7 @@ function showPaymentsPage() {
         <section class="content-card">
 
             <h3>Payment History</h3>
-
-            <p class="subtitle">
-                View all recorded payment transactions.
-            </p>
+            <p class="subtitle">View all recorded payment transactions.</p>
 
             <table>
                 <thead>
@@ -2152,7 +1626,6 @@ function showPaymentsPage() {
                         <th>Actions</th>
                     </tr>
                 </thead>
-
                 <tbody id="paymentTableBody"></tbody>
             </table>
 
@@ -2163,11 +1636,8 @@ function showPaymentsPage() {
 
     renderPayments();
 
-    document.getElementById("paymentSearch")
-        .addEventListener("input", searchPayments);
-
-    document.getElementById("addPaymentBtn")
-        .addEventListener("click", () => openPaymentModal());
+    document.getElementById("paymentSearch").addEventListener("input", searchPayments);
+    document.getElementById("addPaymentBtn").addEventListener("click", () => openPaymentModal());
 
     document.getElementById("paymentTableBody")
         .addEventListener("click", event => {
@@ -2175,16 +1645,11 @@ function showPaymentsPage() {
             const button = event.target.closest("button");
             if (!button) return;
 
-            const index = Number(button.dataset.index);
-
             if (button.classList.contains("delete-payment-btn")) {
-                deletePayment(index);
+                deletePayment(Number(button.dataset.index));
             }
         });
 }
-
-
-/* ---------- PAYMENT TABLE ---------- */
 
 function renderPayments(paymentList = payments) {
 
@@ -2194,15 +1659,9 @@ function renderPayments(paymentList = payments) {
     tableBody.innerHTML = "";
 
     if (!paymentList.length) {
-
         tableBody.innerHTML = `
-            <tr>
-                <td colspan="8">
-                    No payments recorded yet. Record your first payment!
-                </td>
-            </tr>
+            <tr><td colspan="8">No payments recorded yet. Record your first payment!</td></tr>
         `;
-
         updatePaymentStats();
         return;
     }
@@ -2210,7 +1669,6 @@ function renderPayments(paymentList = payments) {
     paymentList.forEach(payment => {
 
         const index = payments.indexOf(payment);
-
         const row = document.createElement("tr");
 
         row.innerHTML = `
@@ -2222,8 +1680,7 @@ function renderPayments(paymentList = payments) {
             <td>${formatPrice(payment.amount)}</td>
             <td>${escapeHTML(payment.note || "—")}</td>
             <td>
-                <button class="customer-action-btn delete-payment-btn"
-                    data-index="${index}">Delete</button>
+                <button class="customer-action-btn delete-payment-btn" data-index="${index}">Delete</button>
             </td>
         `;
 
@@ -2233,49 +1690,22 @@ function renderPayments(paymentList = payments) {
     updatePaymentStats();
 }
 
-
-/* ---------- PAYMENT STATISTICS ---------- */
-
 function updatePaymentStats() {
 
-    const totalPayments = payments.length;
-
-    const totalCollected = payments.reduce(
-        (sum, payment) => sum + Number(payment.amount),
-        0
-    );
+    const totalCollected = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
     const outstanding = invoices
-        .filter(invoice =>
-            ["Confirmed", "Partially Paid"].includes(invoice.status)
-        )
-        .reduce((sum, invoice) => {
+        .filter(invoice => ["Confirmed", "Partially Paid"].includes(invoice.status))
+        .reduce((sum, invoice) =>
+            sum + Math.max(0, Number(invoice.amount) - Number(invoice.amountPaid || 0)), 0);
 
-            const balance =
-                Number(invoice.amount) - Number(invoice.amountPaid || 0);
+    const partialCount = invoices.filter(invoice => invoice.status === "Partially Paid").length;
 
-            return sum + Math.max(0, balance);
-        }, 0);
-
-    const partialCount = invoices.filter(
-        invoice => invoice.status === "Partially Paid"
-    ).length;
-
-    document.getElementById("totalPayments").textContent =
-        totalPayments;
-
-    document.getElementById("totalCollected").textContent =
-        formatPrice(totalCollected);
-
-    document.getElementById("paymentOutstanding").textContent =
-        formatPrice(outstanding);
-
-    document.getElementById("partialPayments").textContent =
-        partialCount;
+    document.getElementById("totalPayments").textContent = payments.length;
+    document.getElementById("totalCollected").textContent = formatPrice(totalCollected);
+    document.getElementById("paymentOutstanding").textContent = formatPrice(outstanding);
+    document.getElementById("partialPayments").textContent = partialCount;
 }
-
-
-/* ---------- OPEN PAYMENT FORM ---------- */
 
 function openPaymentModal(invoiceIndex = null) {
 
@@ -2291,28 +1721,23 @@ function openPaymentModal(invoiceIndex = null) {
         return;
     }
 
-    const selectedInvoice = invoiceIndex !== null
-        ? invoices[invoiceIndex]
-        : null;
+    const selectedInvoice = invoiceIndex !== null ? invoices[invoiceIndex] : null;
 
     if (
         invoiceIndex !== null &&
-        (!selectedInvoice ||
-        !["Confirmed", "Partially Paid"].includes(selectedInvoice.status))
+        (!selectedInvoice || !["Confirmed", "Partially Paid"].includes(selectedInvoice.status))
     ) {
         alert("This invoice is not available for payment.");
         return;
     }
 
     const modal = document.createElement("div");
-
     modal.id = "paymentModal";
     modal.className = "customer-modal-overlay";
 
     const invoiceOptions = eligibleInvoices.map(invoice => {
 
-        const balance =
-            Number(invoice.amount) - Number(invoice.amountPaid || 0);
+        const balance = Number(invoice.amount) - Number(invoice.amountPaid || 0);
 
         return `
             <option value="${escapeHTML(invoice.id)}">
@@ -2331,9 +1756,7 @@ function openPaymentModal(invoiceIndex = null) {
                     <h2>Record Payment</h2>
                     <p>Enter the payment details below.</p>
                 </div>
-
-                <button type="button" class="modal-close"
-                    id="closePaymentModal">&times;</button>
+                <button type="button" class="modal-close" id="closePaymentModal">&times;</button>
             </div>
 
             <form id="paymentForm">
@@ -2341,7 +1764,6 @@ function openPaymentModal(invoiceIndex = null) {
 
                 <div class="form-group">
                     <label>Select Invoice</label>
-
                     <select id="paymentInvoice" required>
                         <option value="">Choose an invoice</option>
                         ${invoiceOptions}
@@ -2350,20 +1772,16 @@ function openPaymentModal(invoiceIndex = null) {
 
                 <div class="form-group">
                     <label>Outstanding Balance</label>
-                    <input type="text" id="paymentBalance"
-                        readonly value="₹0.00">
+                    <input type="text" id="paymentBalance" readonly value="₹0.00">
                 </div>
 
                 <div class="form-group">
                     <label>Payment Amount (₹)</label>
-                    <input type="number" id="paymentAmount"
-                        min="0.01" step="0.01" required
-                        placeholder="Enter amount">
+                    <input type="number" id="paymentAmount" min="0.01" step="0.01" required placeholder="Enter amount">
                 </div>
 
                 <div class="form-group">
                     <label>Payment Method</label>
-
                     <select id="paymentMethod" required>
                         <option value="">Select method</option>
                         <option value="UPI">UPI</option>
@@ -2375,24 +1793,17 @@ function openPaymentModal(invoiceIndex = null) {
 
                 <div class="form-group">
                     <label>Payment Date</label>
-                    <input type="date" id="paymentDate"
-                        value="${getLocalToday()}" required>
+                    <input type="date" id="paymentDate" value="${getLocalToday()}" required>
                 </div>
 
                 <div class="form-group">
                     <label>Note (Optional)</label>
-                    <textarea id="paymentNote" rows="3"
-                        placeholder="Transaction reference or additional note"></textarea>
+                    <textarea id="paymentNote" rows="3" placeholder="Transaction reference or additional note"></textarea>
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" id="cancelPayment">
-                        Cancel
-                    </button>
-
-                    <button type="submit">
-                        Save Payment
-                    </button>
+                    <button type="button" id="cancelPayment">Cancel</button>
+                    <button type="submit">Save Payment</button>
                 </div>
 
             </form>
@@ -2405,30 +1816,20 @@ function openPaymentModal(invoiceIndex = null) {
     const invoiceSelect = document.getElementById("paymentInvoice");
     const amountInput = document.getElementById("paymentAmount");
 
-    if (selectedInvoice) {
-        invoiceSelect.value = selectedInvoice.id;
-    }
+    if (selectedInvoice) invoiceSelect.value = selectedInvoice.id;
 
     function updatePaymentBalance() {
 
-        const invoice = invoices.find(
-            item => String(item.id) === String(invoiceSelect.value)
-        );
+        const invoice = invoices.find(item => String(item.id) === String(invoiceSelect.value));
 
         if (!invoice) {
-            document.getElementById("paymentBalance").value =
-                formatPrice(0);
-
+            document.getElementById("paymentBalance").value = formatPrice(0);
             document.getElementById("paymentInvoiceSummary").innerHTML = "";
-
             amountInput.removeAttribute("max");
             return;
         }
 
-        const balance = Math.max(
-            0,
-            Number(invoice.amount) - Number(invoice.amountPaid || 0)
-        );
+        const balance = Math.max(0, Number(invoice.amount) - Number(invoice.amountPaid || 0));
         const subtotal = Number(invoice.subtotal ?? invoice.amount);
         const discountAmount = Number(invoice.discountAmount || 0);
 
@@ -2440,16 +1841,12 @@ function openPaymentModal(invoiceIndex = null) {
                 <span>${formatPrice(subtotal)}</span>
             </div>
 
-            ${
-                discountAmount > 0
-                    ? `
-                        <div class="payment-summary-row discount">
-                            <span>${escapeHTML(invoice.discountName || "Discount")}</span>
-                            <span>-${formatPrice(discountAmount)}</span>
-                        </div>
-                    `
-                    : ""
-            }
+            ${discountAmount > 0
+                ? `<div class="payment-summary-row discount">
+                       <span>${escapeHTML(invoice.discountName || "Discount")}</span>
+                       <span>-${formatPrice(discountAmount)}</span>
+                   </div>`
+                : ""}
 
             <div class="payment-summary-row final">
                 <strong>Final Invoice Amount</strong>
@@ -2457,8 +1854,7 @@ function openPaymentModal(invoiceIndex = null) {
             </div>
         `;
 
-        document.getElementById("paymentBalance").value =
-            formatPrice(balance);
+        document.getElementById("paymentBalance").value = formatPrice(balance);
 
         amountInput.max = balance.toFixed(2);
         amountInput.placeholder = `Maximum ${balance.toFixed(2)}`;
@@ -2466,53 +1862,32 @@ function openPaymentModal(invoiceIndex = null) {
 
     invoiceSelect.addEventListener("change", updatePaymentBalance);
 
-    document.getElementById("closePaymentModal")
-        .addEventListener("click", closePaymentModal);
-
-    document.getElementById("cancelPayment")
-        .addEventListener("click", closePaymentModal);
-
-    document.getElementById("paymentForm")
-        .addEventListener("submit", savePayment);
+    document.getElementById("closePaymentModal").addEventListener("click", closePaymentModal);
+    document.getElementById("cancelPayment").addEventListener("click", closePaymentModal);
+    document.getElementById("paymentForm").addEventListener("submit", savePayment);
 
     modal.addEventListener("click", event => {
         if (event.target === modal) closePaymentModal();
     });
 
-    // Update the balance only after registering all event listeners
     updatePaymentBalance();
 }
-
 
 function closePaymentModal() {
     document.getElementById("paymentModal")?.remove();
 }
 
-
-/* ---------- SAVE PAYMENT ---------- */
-
 function savePayment(event) {
 
     event.preventDefault();
 
-    const invoiceId =
-        document.getElementById("paymentInvoice").value;
+    const invoiceId = document.getElementById("paymentInvoice").value;
+    const amount = Number(document.getElementById("paymentAmount").value);
+    const method = document.getElementById("paymentMethod").value;
+    const paymentDate = document.getElementById("paymentDate").value;
+    const note = document.getElementById("paymentNote").value.trim();
 
-    const amount =
-        Number(document.getElementById("paymentAmount").value);
-
-    const method =
-        document.getElementById("paymentMethod").value;
-
-    const paymentDate =
-        document.getElementById("paymentDate").value;
-
-    const note =
-        document.getElementById("paymentNote").value.trim();
-
-    const invoice = invoices.find(
-        item => item.id === invoiceId
-    );
+    const invoice = invoices.find(item => item.id === invoiceId);
 
     if (!invoice) {
         alert("Please select a valid invoice.");
@@ -2543,20 +1918,14 @@ function savePayment(event) {
     }
 
     const payment = {
-
         id: "PAY-" + Date.now().toString().slice(-8),
-
         invoiceId: invoice.id,
-
         customerName: invoice.customerName,
         customerEmail: invoice.customerEmail,
-
         amount,
-
         method,
         paymentDate,
         note,
-
         createdAt: new Date().toISOString()
     };
 
@@ -2565,13 +1934,10 @@ function savePayment(event) {
     invoice.amountPaid = currentPaid + amount;
 
     if (invoice.amountPaid >= Number(invoice.amount) - 0.001) {
-
         invoice.amountPaid = Number(invoice.amount);
         invoice.status = "Paid";
         invoice.paidAt = new Date().toISOString();
-
     } else {
-
         invoice.status = "Partially Paid";
     }
 
@@ -2583,62 +1949,42 @@ function savePayment(event) {
     alert(
         invoice.status === "Paid"
             ? `Payment recorded! Invoice ${invoice.id} is now fully paid.`
-            : `Payment recorded! Remaining balance: ${formatPrice(
-                Number(invoice.amount) - invoice.amountPaid
-            )}`
+            : `Payment recorded! Remaining balance: ${formatPrice(Number(invoice.amount) - invoice.amountPaid)}`
     );
 
     activateSidebarPage("Payments");
     showPaymentsPage();
 }
 
-
-/* ---------- DELETE PAYMENT ---------- */
-
 function deletePayment(index) {
 
     const payment = payments[index];
     if (!payment) return;
 
-    if (!confirm(`Delete payment ${payment.id}? This will restore the invoice balance.`)) {
-        return;
-    }
+    if (!confirm(`Delete payment ${payment.id}? This will restore the invoice balance.`)) return;
 
-    const invoice = invoices.find(
-        item => item.id === payment.invoiceId
-    );
+    const invoice = invoices.find(item => item.id === payment.invoiceId);
 
     if (invoice) {
 
-        invoice.amountPaid = Math.max(
-            0,
-            Number(invoice.amountPaid || 0) - Number(payment.amount)
-        );
+        invoice.amountPaid = Math.max(0, Number(invoice.amountPaid || 0) - Number(payment.amount));
 
         if (invoice.amountPaid <= 0.001) {
-
             invoice.amountPaid = 0;
             invoice.status = "Confirmed";
-            delete invoice.paidAt;
-
         } else {
-
             invoice.status = "Partially Paid";
-            delete invoice.paidAt;
         }
 
+        delete invoice.paidAt;
         saveInvoicesToStorage();
     }
 
     payments.splice(index, 1);
-
     savePaymentsToStorage();
 
     renderPayments();
 }
-
-
-/* ---------- SEARCH PAYMENTS ---------- */
 
 function searchPayments() {
 
@@ -2647,16 +1993,13 @@ function searchPayments() {
 
     const value = input.value.toLowerCase().trim();
 
-    const filtered = payments.filter(payment =>
-
+    renderPayments(payments.filter(payment =>
         payment.id.toLowerCase().includes(value) ||
         payment.invoiceId.toLowerCase().includes(value) ||
         payment.customerName.toLowerCase().includes(value) ||
         payment.method.toLowerCase().includes(value) ||
         (payment.note || "").toLowerCase().includes(value)
-    );
-
-    renderPayments(filtered);
+    ));
 }
 
 
@@ -2664,59 +2007,34 @@ function searchPayments() {
    10. DATE HELPERS
 ===================================================== */
 
-function getLocalToday() {
-
-    const today = new Date();
-
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-
+function formatISODate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
 }
 
+function getLocalToday() {
+    return formatISODate(new Date());
+}
 
 function calculateNextBilling(startDate, frequency) {
 
     const date = new Date(startDate + "T12:00:00");
 
-    if (frequency === "Daily") {
-        date.setDate(date.getDate() + 1);
-    }
+    if (frequency === "Daily") date.setDate(date.getDate() + 1);
+    if (frequency === "Weekly") date.setDate(date.getDate() + 7);
+    if (frequency === "Monthly") date.setMonth(date.getMonth() + 1);
+    if (frequency === "Yearly") date.setFullYear(date.getFullYear() + 1);
 
-    if (frequency === "Weekly") {
-        date.setDate(date.getDate() + 7);
-    }
-
-    if (frequency === "Monthly") {
-        date.setMonth(date.getMonth() + 1);
-    }
-
-    if (frequency === "Yearly") {
-        date.setFullYear(date.getFullYear() + 1);
-    }
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return formatISODate(date);
 }
-
 
 function addDaysToDate(dateValue, days) {
-
     const date = new Date(dateValue + "T12:00:00");
-
     date.setDate(date.getDate() + days);
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return formatISODate(date);
 }
-
 
 function formatDate(dateValue) {
 
@@ -2739,53 +2057,96 @@ function formatDate(dateValue) {
 ===================================================== */
 
 function formatPrice(price) {
-
     return "₹" + Number(price).toLocaleString("en-IN", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
 }
 
-
 function escapeHTML(value) {
 
-    return String(value ?? "").replace(/[&<>"']/g, character => {
+    const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    };
 
-        const entities = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        };
-
-        return entities[character];
-    });
+    return String(value ?? "").replace(/[&<>"']/g, character => entities[character]);
 }
 
-function showDiscountsPage() {
-    const content = mainContent;
+// Draws the last 6 months of collected revenue into a container
+function renderRevenueBars(containerId) {
 
-    content.innerHTML = `
+    const chartContainer = document.getElementById(containerId);
+    if (!chartContainer) return;
+
+    const monthlyRevenue = {};
+
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(1);
+        date.setMonth(date.getMonth() - i);
+
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        monthlyRevenue[key] = {
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            amount: 0
+        };
+    }
+
+    invoices.forEach(invoice => {
+        if (!invoice.issueDate) return;
+
+        const date = new Date(invoice.issueDate + "T00:00:00");
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+        if (monthlyRevenue[key]) {
+            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
+        }
+    });
+
+    const maxRevenue = Math.max(1, ...Object.values(monthlyRevenue).map(item => item.amount));
+
+    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
+
+        const height = (item.amount / maxRevenue) * 100;
+
+        return `
+            <div class="revenue-bar-item">
+                <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
+                <div class="revenue-bar-track">
+                    <div class="revenue-bar-fill" style="height: ${height}%"></div>
+                </div>
+                <span>${item.label}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+
+/* =====================================================
+   12. DISCOUNTS MODULE
+===================================================== */
+
+function showDiscountsPage() {
+
+    mainContent.innerHTML = `
         <div class="page-header">
             <div>
                 <h1>Discounts</h1>
                 <p>Manage discounts and promotional offers.</p>
             </div>
-            <button class="primary-btn" onclick="openDiscountModal()">
-                + Create Discount
-            </button>
+            <button class="primary-btn" onclick="openDiscountModal()">+ Create Discount</button>
         </div>
 
         <div class="content-card">
             <div class="card-header">
                 <h2>All Discounts</h2>
-                <input
-                    type="text"
-                    id="discountSearch"
-                    placeholder="Search discounts..."
-                    oninput="renderDiscountsTable()"
-                >
+                <input type="text" id="discountSearch" placeholder="Search discounts..."
+                    oninput="renderDiscountsTable()">
             </div>
 
             <div id="discountsTableContainer"></div>
@@ -2796,8 +2157,8 @@ function showDiscountsPage() {
 }
 
 function renderDiscountsTable() {
-    const container = document.getElementById("discountsTableContainer");
 
+    const container = document.getElementById("discountsTableContainer");
     if (!container) return;
 
     const searchInput = document.getElementById("discountSearch");
@@ -2808,9 +2169,7 @@ function renderDiscountsTable() {
     );
 
     if (filteredDiscounts.length === 0) {
-        container.innerHTML = `
-            <p class="empty-state">No discounts found. Create your first discount!</p>
-        `;
+        container.innerHTML = `<p class="empty-state">No discounts found. Create your first discount!</p>`;
         return;
     }
 
@@ -2828,22 +2187,17 @@ function renderDiscountsTable() {
             <tbody>
                 ${filteredDiscounts.map(discount => `
                     <tr>
-                        <td>${discount.name}</td>
-                        <td>${discount.type}</td>
+                        <td>${escapeHTML(discount.name)}</td>
+                        <td>${escapeHTML(discount.type)}</td>
                         <td>${discount.type === "Percentage"
                             ? discount.value + "%"
                             : "₹" + discount.value}</td>
                         <td>${discount.usedCount || 0} / ${discount.usageLimit || "Unlimited"}</td>
                         <td>
                             <button class="discount-action-btn edit-btn"
-                                onclick="editDiscount('${discount.id}')">
-                                Edit
-                            </button>
-
+                                onclick="editDiscount('${discount.id}')">Edit</button>
                             <button class="discount-action-btn delete-btn"
-                                onclick="deleteDiscount('${discount.id}')">
-                                Delete
-                            </button>
+                                onclick="deleteDiscount('${discount.id}')">Delete</button>
                         </td>
                     </tr>
                 `).join("")}
@@ -2853,11 +2207,10 @@ function renderDiscountsTable() {
 }
 
 function openDiscountModal(discountId = null) {
-    const discount = discountId
-        ? discounts.find(d => d.id === discountId)
-        : null;
 
-    const content = document.body;
+    if (document.getElementById("discountModal")) return;
+
+    const discount = discountId ? discounts.find(d => d.id === discountId) : null;
 
     const modal = document.createElement("div");
     modal.className = "customer-modal-overlay";
@@ -2873,13 +2226,9 @@ function openDiscountModal(discountId = null) {
             <form id="discountForm">
                 <div class="form-group">
                     <label>Discount Name</label>
-                    <input
-                        type="text"
-                        id="discountName"
-                        value="${discount ? discount.name : ""}"
-                        placeholder="e.g. Summer Sale"
-                        required
-                    >
+                    <input type="text" id="discountName"
+                        value="${discount ? escapeHTML(discount.name) : ""}"
+                        placeholder="e.g. Summer Sale" required>
                 </div>
 
                 <div class="form-group">
@@ -2892,88 +2241,59 @@ function openDiscountModal(discountId = null) {
 
                 <div class="form-group">
                     <label>Discount Value</label>
-                    <input
-                        type="number"
-                        id="discountValue"
-                        min="0.01"
-                        step="0.01"
-                        value="${discount ? discount.value : ""}"
-                        required
-                    >
+                    <input type="number" id="discountValue" min="0.01" step="0.01"
+                        value="${discount ? discount.value : ""}" required>
                 </div>
 
                 <div class="form-group">
                     <label>Minimum Purchase Amount (₹)</label>
-                    <input
-                        type="number"
-                        id="discountMinimum"
-                        min="0"
-                        value="${discount ? discount.minimumPurchase || 0 : 0}"
-                    >
+                    <input type="number" id="discountMinimum" min="0"
+                        value="${discount ? discount.minimumPurchase || 0 : 0}">
                 </div>
 
                 <div class="form-group">
                     <label>Minimum Quantity</label>
-                    <input
-                        type="number"
-                        id="discountQuantity"
-                        min="1"
-                        value="${discount ? discount.minimumQuantity || 1 : 1}"
-                    >
+                    <input type="number" id="discountQuantity" min="1"
+                        value="${discount ? discount.minimumQuantity || 1 : 1}">
                 </div>
 
                 <div class="form-group">
                     <label>Start Date</label>
-                    <input
-                        type="date"
-                        id="discountStartDate"
-                        value="${discount ? discount.startDate || "" : ""}"
-                        required
-                    >
+                    <input type="date" id="discountStartDate"
+                        value="${discount ? discount.startDate || "" : ""}" required>
                 </div>
 
                 <div class="form-group">
                     <label>Expiry Date</label>
-                    <input
-                        type="date"
-                        id="discountEndDate"
-                        value="${discount ? discount.endDate || "" : ""}"
-                        required
-                    >
+                    <input type="date" id="discountEndDate"
+                        value="${discount ? discount.endDate || "" : ""}" required>
                 </div>
 
                 <div class="form-group">
                     <label>Usage Limit</label>
-                    <input
-                        type="number"
-                        id="discountUsageLimit"
-                        min="1"
+                    <input type="number" id="discountUsageLimit" min="1"
                         value="${discount ? discount.usageLimit || "" : ""}"
-                        placeholder="Leave empty for unlimited"
-                    >
+                        placeholder="Leave empty for unlimited">
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" onclick="closeDiscountModal()">Cancel</button>
-                    <button type="submit" class="primary-btn">
-                        Save Discount
-                    </button>
+                    <button type="submit" class="primary-btn">Save Discount</button>
                 </div>
             </form>
         </div>
     `;
 
-    content.appendChild(modal);
+    document.body.appendChild(modal);
 
-    document.getElementById("discountForm").addEventListener("submit", function(event) {
+    document.getElementById("discountForm").addEventListener("submit", function (event) {
         event.preventDefault();
         saveDiscount(discountId);
     });
 }
 
 function closeDiscountModal() {
-    const modal = document.getElementById("discountModal");
-    if (modal) modal.remove();
+    document.getElementById("discountModal")?.remove();
 }
 
 function editDiscount(discountId) {
@@ -2981,6 +2301,7 @@ function editDiscount(discountId) {
 }
 
 function saveDiscount(discountId = null) {
+
     const name = document.getElementById("discountName").value.trim();
     const type = document.getElementById("discountType").value;
     const value = Number(document.getElementById("discountValue").value);
@@ -3001,8 +2322,7 @@ function saveDiscount(discountId = null) {
         return;
     }
 
-    if (minimumPurchase < 0 || minimumQuantity < 1 ||
-        (usageLimit !== null && usageLimit < 1)) {
+    if (minimumPurchase < 0 || minimumQuantity < 1 || (usageLimit !== null && usageLimit < 1)) {
         alert("Please enter valid minimum and usage limits.");
         return;
     }
@@ -3012,9 +2332,7 @@ function saveDiscount(discountId = null) {
         return;
     }
 
-    const existingDiscount = discountId
-        ? discounts.find(d => d.id === discountId)
-        : null;
+    const existingDiscount = discountId ? discounts.find(d => d.id === discountId) : null;
 
     const discountData = {
         id: discountId || "discount_" + Date.now(),
@@ -3030,8 +2348,7 @@ function saveDiscount(discountId = null) {
     };
 
     if (existingDiscount) {
-        const index = discounts.findIndex(d => d.id === discountId);
-        discounts[index] = discountData;
+        discounts[discounts.findIndex(d => d.id === discountId)] = discountData;
     } else {
         discounts.push(discountData);
     }
@@ -3044,25 +2361,16 @@ function saveDiscount(discountId = null) {
 }
 
 function deleteDiscount(discountId) {
-    const confirmDelete = confirm(
-        "Are you sure you want to delete this discount?"
-    );
 
-    if (!confirmDelete) return;
+    if (!confirm("Are you sure you want to delete this discount?")) return;
 
-    discounts = discounts.filter(
-        discount => discount.id !== discountId
-    );
+    discounts = discounts.filter(discount => discount.id !== discountId);
 
     saveDiscountsToStorage();
     renderDiscountsTable();
 
     alert("Discount deleted successfully!");
 }
-
-/* ========================================
-   AUTOMATIC DISCOUNT CALCULATION
-======================================== */
 
 function calculateApplicableDiscount(subscription, billingDate) {
 
@@ -3071,139 +2379,56 @@ function calculateApplicableDiscount(subscription, billingDate) {
 
     const eligibleDiscounts = discounts.filter(discount => {
 
-        // Check discount date range
-        if (billingDate < discount.startDate ||
-            billingDate > discount.endDate) {
-            return false;
-        }
+        if (billingDate < discount.startDate || billingDate > discount.endDate) return false;
+        if (subtotal < Number(discount.minimumPurchase || 0)) return false;
+        if (quantity < Number(discount.minimumQuantity || 1)) return false;
 
-        // Check minimum purchase
-        if (subtotal < Number(discount.minimumPurchase || 0)) {
-            return false;
-        }
-
-        // Check minimum quantity
-        if (quantity < Number(discount.minimumQuantity || 1)) {
-            return false;
-        }
-
-        // Check usage limit
-        if (discount.usageLimit !== null &&
+        if (
+            discount.usageLimit !== null &&
             discount.usageLimit !== "" &&
-            Number(discount.usedCount || 0) >= Number(discount.usageLimit)) {
+            Number(discount.usedCount || 0) >= Number(discount.usageLimit)
+        ) {
             return false;
         }
 
         return true;
     });
 
-    if (eligibleDiscounts.length === 0) {
-        return null;
-    }
+    if (eligibleDiscounts.length === 0) return null;
 
-    // Calculate savings for every eligible discount
     const calculatedDiscounts = eligibleDiscounts.map(discount => {
 
-        let discountAmount = 0;
+        let discountAmount = discount.type === "Percentage"
+            ? subtotal * (discount.value / 100)
+            : Number(discount.value);
 
-        if (discount.type === "Percentage") {
-            discountAmount = subtotal * (discount.value / 100);
-        } else {
-            discountAmount = Number(discount.value);
-        }
-
-        // Discount cannot exceed invoice subtotal
         discountAmount = Math.min(discountAmount, subtotal);
 
-        return {
-            discount,
-            discountAmount
-        };
+        return { discount, discountAmount };
     });
 
-    // Apply the discount that gives the highest savings
-    calculatedDiscounts.sort(
-        (a, b) => b.discountAmount - a.discountAmount
-    );
+    calculatedDiscounts.sort((a, b) => b.discountAmount - a.discountAmount);
 
     return calculatedDiscounts[0];
-}   
-
-
-/* =====================================================
-   12. OTHER PAGE PLACEHOLDERS
-===================================================== */
-
-function showPlaceholderPage(pageName) {
-
-    mainContent.innerHTML = `
-
-        <header class="topbar">
-            <div class="search-box">
-                <span>⌕</span>
-                <input type="text"
-                    placeholder="Search ${escapeHTML(pageName)}...">
-            </div>
-        </header>
-
-        <section class="welcome-section">
-            <div>
-                <p class="eyebrow">WORKSPACE</p>
-                <h1>${escapeHTML(pageName)}</h1>
-                <p class="subtitle">
-                    Manage your ${escapeHTML(pageName.toLowerCase())} here.
-                </p>
-            </div>
-        </section>
-
-        <section class="content-card">
-            <h3>${escapeHTML(pageName)} Management</h3>
-            <p class="subtitle">
-                This section will be developed next.
-            </p>
-        </section>
-
-        <footer>© 2026 Brightloop Software</footer>
-    `;
 }
 
 
 /* =====================================================
-   13. INITIAL PAGE
+   13. REPORTS
 ===================================================== */
-
-const savedPage = localStorage.getItem("brightloopCurrentPage") || "Dashboard";
-
-activateSidebarPage(savedPage);
-showPage(savedPage);
-
-/* ========================================
-   REPORTS & ANALYTICS
-======================================== */
 
 function showReportsPage() {
 
-    const totalRevenue = invoices.reduce(
-        (sum, invoice) => sum + Number(invoice.amountPaid || 0),
-        0
-    );
+    const totalRevenue = invoices.reduce((sum, invoice) => sum + Number(invoice.amountPaid || 0), 0);
 
-    const outstandingAmount = invoices.reduce(
-        (sum, invoice) =>
-            sum + Math.max(
-                0,
-                Number(invoice.amount || 0) -
-                Number(invoice.amountPaid || 0)
-            ),
-        0
-    );
+    const outstandingAmount = invoices
+        .filter(invoice => ["Confirmed", "Partially Paid"].includes(invoice.status))
+        .reduce((sum, invoice) =>
+            sum + Math.max(0, Number(invoice.amount || 0) - Number(invoice.amountPaid || 0)), 0);
 
     const activeSubscriptions = subscriptions.filter(
-        subscription =>
-            ["Active", "Confirmed"].includes(subscription.status)
+        subscription => ["Active", "Confirmed"].includes(subscription.status)
     ).length;
-
-    const totalInvoices = invoices.length;
 
     mainContent.innerHTML = `
         <div class="page-header">
@@ -3239,7 +2464,7 @@ function showReportsPage() {
             <div class="report-stat-card">
                 <div class="report-stat-icon">🧾</div>
                 <p>Total Invoices</p>
-                <h2>${totalInvoices}</h2>
+                <h2>${invoices.length}</h2>
                 <small>Invoices generated</small>
             </div>
 
@@ -3250,231 +2475,90 @@ function showReportsPage() {
                 <h2>Monthly Revenue</h2>
                 <span>Payments collected over the last 6 months</span>
             </div>
-
             <div id="monthlyRevenueChart" class="monthly-revenue-chart"></div>
         </div>
+
         <div class="content-card reports-overview">
             <div class="card-header">
                 <h2>Business Overview</h2>
             </div>
 
             <div class="reports-overview-content">
-                <p>
-                    <strong>${invoices.filter(i => i.status === "Paid").length}</strong>
-                    Fully Paid Invoices
-                </p>
-
-                <p>
-                    <strong>${invoices.filter(i =>
-                        ["Confirmed", "Partially Paid"].includes(i.status)
-                    ).length}</strong>
-                    Pending Invoices
-                </p>
-
-                <p>
-                    <strong>${subscriptions.length}</strong>
-                    Total Subscriptions
-                </p>
-
-                <p>
-                    <strong>${customers.length}</strong>
-                    Total Customers
-                </p>
+                <p><strong>${invoices.filter(i => i.status === "Paid").length}</strong> Fully Paid Invoices</p>
+                <p><strong>${invoices.filter(i => ["Confirmed", "Partially Paid"].includes(i.status)).length}</strong> Pending Invoices</p>
+                <p><strong>${subscriptions.length}</strong> Total Subscriptions</p>
+                <p><strong>${customers.length}</strong> Total Customers</p>
             </div>
         </div>
-        `;
+    `;
 
-        // Generate Monthly Revenue Chart
-        const chartContainer = document.getElementById("monthlyRevenueChart");
-
-        const monthlyRevenue = {};
-
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(1);
-            date.setMonth(date.getMonth() - i);
-
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-            monthlyRevenue[key] = {
-                label: date.toLocaleString("en-IN", { month: "short" }),
-                amount: 0
-            };
-        }
-
-        invoices.forEach(invoice => {
-            if (!invoice.issueDate) return;
-
-            const date = new Date(invoice.issueDate + "T00:00:00");
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-            if (monthlyRevenue[key]) {
-                monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
-            }
-        });
-
-        const maxRevenue = Math.max(
-            1,
-            ...Object.values(monthlyRevenue).map(item => item.amount)
-        );
-
-        chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
-
-            const height = (item.amount / maxRevenue) * 100;
-
-            return `
-                <div class="revenue-bar-item">
-                    <div class="revenue-bar-value">${formatPrice(item.amount)}</div>
-                    <div class="revenue-bar-track">
-                        <div class="revenue-bar-fill" style="height: ${height}%"></div>
-                    </div>
-                    <span>${item.label}</span>
-                </div>
-            `;
-        }).join("");
-    }
-    function renderDashboardRevenueChart() {
-
-    const chartContainer = document.getElementById("dashboardRevenueChart");
-
-    if (!chartContainer) return;
-
-    const monthlyRevenue = {};
-
-    // Prepare the last 6 months
-    for (let i = 5; i >= 0; i--) {
-
-        const date = new Date();
-        date.setDate(1);
-        date.setMonth(date.getMonth() - i);
-
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-        monthlyRevenue[key] = {
-            label: date.toLocaleString("en-IN", { month: "short" }),
-            amount: 0
-        };
-    }
-
-    // Calculate collected revenue
-    invoices.forEach(invoice => {
-
-        if (!invoice.issueDate) return;
-
-        const date = new Date(invoice.issueDate + "T00:00:00");
-
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-        if (monthlyRevenue[key]) {
-            monthlyRevenue[key].amount += Number(invoice.amountPaid || 0);
-        }
-    });
-
-    const maxRevenue = Math.max(
-        1,
-        ...Object.values(monthlyRevenue).map(item => item.amount)
-    );
-
-    chartContainer.innerHTML = Object.values(monthlyRevenue).map(item => {
-
-        const height = (item.amount / maxRevenue) * 100;
-
-        return `
-            <div class="revenue-bar-item">
-                <div class="revenue-bar-value">
-                    ${formatPrice(item.amount)}
-                </div>
-
-                <div class="revenue-bar-track">
-                    <div class="revenue-bar-fill"
-                         style="height: ${height}%"></div>
-                </div>
-
-                <span>${item.label}</span>
-            </div>
-        `;
-
-    }).join("");
+    renderRevenueBars("monthlyRevenueChart");
 }
-function renderDashboardStats() {
 
-    console.log("Dashboard invoice count:", invoices.length);
-    console.log("Dashboard subscription count:", subscriptions.length);
-    console.log("Dashboard invoices:", invoices);
+
+/* =====================================================
+   14. DASHBOARD
+===================================================== */
+
+function renderDashboardRevenueChart() {
+    renderRevenueBars("dashboardRevenueChart");
+}
+
+function renderDashboardStats() {
 
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
+    const openStatuses = ["Confirmed", "Partially Paid"];
 
-    // Monthly revenue collected
+    // Revenue collected this month
     const monthlyRevenue = invoices.reduce((sum, invoice) => {
 
         if (!invoice.issueDate) return sum;
 
         const date = new Date(invoice.issueDate + "T00:00:00");
 
-        if (
-            date.getMonth() === currentMonth &&
-            date.getFullYear() === currentYear
-        ) {
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
             return sum + Number(invoice.amountPaid || 0);
         }
 
         return sum;
-
     }, 0);
 
-    // Active subscriptions
-    const activeCount = subscriptions.filter(
-        subscription => subscription.status === "Active"
-    ).length;
+    const activeCount = subscriptions.filter(s => s.status === "Active").length;
 
-    // Outstanding payments
-    const outstanding = invoices.reduce((sum, invoice) => {
+    // Outstanding: Confirmed and Partially Paid only (Drafts are not yet billed)
+    const outstanding = invoices
+        .filter(invoice => openStatuses.includes(invoice.status))
+        .reduce((sum, invoice) =>
+            sum + Math.max(0, Number(invoice.amount || 0) - Number(invoice.amountPaid || 0)), 0);
 
-        return sum + Math.max(
-            0,
-            Number(invoice.amount || 0) -
-            Number(invoice.amountPaid || 0)
-        );
-
-    }, 0);
-
-    // Pending invoices
     const pendingCount = invoices.filter(invoice =>
-        ["Confirmed", "Partially Paid"].includes(invoice.status) &&
+        openStatuses.includes(invoice.status) &&
         Number(invoice.amount) > Number(invoice.amountPaid || 0)
     ).length;
 
-    // Overdue invoices
-    const overdueCount = invoices.filter(invoice => {
+    const overdueCount = invoices.filter(invoice =>
+        openStatuses.includes(invoice.status) &&
+        invoice.dueDate &&
+        invoice.dueDate < getLocalToday() &&
+        Number(invoice.amount) > Number(invoice.amountPaid || 0)
+    ).length;
 
-        if (!invoice.dueDate) return false;
-
-        return (
-            invoice.dueDate < getLocalToday() &&
-            Number(invoice.amount) > Number(invoice.amountPaid || 0)
-        );
-
-    }).length;
-
-    document.getElementById("dashboardMonthlyRevenue").textContent =
-        formatPrice(monthlyRevenue);
-
-    document.getElementById("dashboardActiveSubscriptions").textContent =
-        activeCount;
-
-    document.getElementById("dashboardOutstanding").textContent =
-        formatPrice(outstanding);
-
-    document.getElementById("dashboardPendingInvoices").textContent =
-        `${pendingCount} invoices awaiting payment`;
-
-    document.getElementById("dashboardOverdueInvoices").textContent =
-        overdueCount;
+    document.getElementById("dashboardMonthlyRevenue").textContent = formatPrice(monthlyRevenue);
+    document.getElementById("dashboardActiveSubscriptions").textContent = activeCount;
+    document.getElementById("dashboardOutstanding").textContent = formatPrice(outstanding);
+    document.getElementById("dashboardPendingInvoices").textContent = `${pendingCount} invoices awaiting payment`;
+    document.getElementById("dashboardOverdueInvoices").textContent = overdueCount;
 }
 
+
+/* =====================================================
+   15. SETTINGS
+===================================================== */
+
 function showSettingsPage() {
+
     const settings = JSON.parse(localStorage.getItem("brightloopSettings")) || {
         businessName: "Brightloop",
         email: "",
@@ -3498,10 +2582,10 @@ function showSettingsPage() {
             <div class="settings-card">
                 <h2>🏢 Business Information</h2>
                 <label>Business Name</label>
-                <input id="settingBusiness" value="${settings.businessName}" />
+                <input id="settingBusiness" value="${escapeHTML(settings.businessName)}" />
 
                 <label>Admin Email</label>
-                <input id="settingEmail" type="email" value="${settings.email}" />
+                <input id="settingEmail" type="email" value="${escapeHTML(settings.email)}" />
 
                 <label>Currency</label>
                 <select id="settingCurrency">
@@ -3542,15 +2626,14 @@ function showSettingsPage() {
                 </label>
             </div>
 
-            <button class="btn btn-primary" onclick="saveBrightloopSettings()">
-                Save Settings
-            </button>
+            <button class="btn btn-primary" onclick="saveBrightloopSettings()">Save Settings</button>
             <p id="settingsMessage"></p>
         </div>
     `;
 }
 
 function saveBrightloopSettings() {
+
     const settings = {
         businessName: document.getElementById("settingBusiness").value.trim(),
         email: document.getElementById("settingEmail").value.trim(),
@@ -3571,6 +2654,161 @@ function saveBrightloopSettings() {
     document.getElementById("settingsMessage").textContent = "Settings saved successfully!";
 }
 
+
+/* =====================================================
+   16. PLACEHOLDER PAGES
+===================================================== */
+
+function showPlaceholderPage(pageName) {
+
+    mainContent.innerHTML = `
+
+        <header class="topbar">
+            <div class="search-box">
+                <span>⌕</span>
+                <input type="text" placeholder="Search ${escapeHTML(pageName)}...">
+            </div>
+        </header>
+
+        <section class="welcome-section">
+            <div>
+                <p class="eyebrow">WORKSPACE</p>
+                <h1>${escapeHTML(pageName)}</h1>
+                <p class="subtitle">Manage your ${escapeHTML(pageName.toLowerCase())} here.</p>
+            </div>
+        </section>
+
+        <section class="content-card">
+            <h3>${escapeHTML(pageName)} Management</h3>
+            <p class="subtitle">This section will be developed next.</p>
+        </section>
+
+        <footer>© 2026 Brightloop Software</footer>
+    `;
+}
+
+
+/* =====================================================
+   17. AUTHENTICATION, USER DISPLAY AND LOGOUT
+   (Front-end demo: accounts live in localStorage. A real
+   system must hash passwords and check them on a server.)
+===================================================== */
+
+let accounts = JSON.parse(localStorage.getItem("brightloopAccounts")) || [];
+
+function saveAccountsToStorage() {
+    localStorage.setItem("brightloopAccounts", JSON.stringify(accounts));
+}
+
+// Demo account so the app can always be opened
+if (!accounts.some(account => account.email === "admin@brightloop.com")) {
+    accounts.push({
+        email: "admin@brightloop.com",
+        password: "Admin@12345",
+        createdAt: new Date().toISOString()
+    });
+    saveAccountsToStorage();
+}
+
+
+/* ---------- VALIDATION RULES ---------- */
+
+const EMAIL_PATTERN = /^[A-Za-z0-9]([A-Za-z0-9._%+-]*[A-Za-z0-9])?@[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
+
+// Returns an error message, or "" when the email is valid
+function validateEmail(email) {
+
+    if (!email) return "Email address is required.";
+    if (email.length > 254) return "Email address is too long.";
+    if (/\s/.test(email)) return "Email address cannot contain spaces.";
+    if (email.includes("..")) return "Email address cannot contain two dots in a row.";
+    if (!EMAIL_PATTERN.test(email)) return "Enter a valid email address, like name@example.com.";
+
+    return "";
+}
+
+// Password rule: more than 8 characters, an uppercase letter,
+// a lowercase letter and a special character
+function getPasswordChecks(password) {
+    return {
+        length: password.length > 8,
+        upper: /[A-Z]/.test(password),
+        lower: /[a-z]/.test(password),
+        special: /[^A-Za-z0-9\s]/.test(password)
+    };
+}
+
+// Returns an error message, or "" when the password is valid
+function validatePassword(password) {
+
+    if (!password) return "Password is required.";
+
+    const checks = getPasswordChecks(password);
+    const missing = [];
+
+    if (!checks.length) missing.push("more than 8 characters");
+    if (!checks.upper) missing.push("an uppercase letter");
+    if (!checks.lower) missing.push("a lowercase letter");
+    if (!checks.special) missing.push("a special character");
+
+    return missing.length ? "Password needs " + missing.join(", ") + "." : "";
+}
+
+function updatePasswordRules() {
+
+    const checks = getPasswordChecks(document.getElementById("signupPassword").value);
+
+    document.querySelectorAll("#passwordRules li").forEach(item => {
+        item.classList.toggle("met", checks[item.dataset.rule]);
+    });
+}
+
+function setFieldError(inputId, errorId, message) {
+
+    const error = document.getElementById(errorId);
+    if (error) error.textContent = message || "";
+
+    if (inputId) {
+        document.getElementById(inputId).classList.toggle("invalid", Boolean(message));
+    }
+}
+
+function clearAuthErrors() {
+
+    [
+        ["loginEmail", "loginEmailError"],
+        ["loginPassword", "loginPasswordError"],
+        ["signupEmail", "signupEmailError"],
+        ["signupPassword", "signupPasswordError"],
+        ["signupConfirm", "signupConfirmError"]
+    ].forEach(([inputId, errorId]) => setFieldError(inputId, errorId, ""));
+
+    setFieldError(null, "loginError", "");
+}
+
+
+/* ---------- LOGIN / SIGN UP SCREEN ---------- */
+
+function showAuthView(view) {
+
+    const isSignup = view === "signup";
+
+    document.getElementById("loginForm").classList.toggle("hidden", isSignup);
+    document.getElementById("signupForm").classList.toggle("hidden", !isSignup);
+
+    document.getElementById("authTitle").textContent =
+        isSignup ? "Create your account" : "Welcome back!";
+
+    document.getElementById("authSubtitle").textContent =
+        isSignup ? "Sign up to start managing subscriptions." : "Log in to manage your subscriptions.";
+
+    document.getElementById("authSwitch").innerHTML = isSignup
+        ? `Already have an account? <a href="#" data-view="login">Log in</a>`
+        : `Don't have an account? <a href="#" data-view="signup">Sign up</a>`;
+
+    clearAuthErrors();
+}
+
 function showLoginScreen() {
     document.getElementById("loginScreen").style.display = "flex";
     document.getElementById("appContainer").style.display = "none";
@@ -3581,43 +2819,223 @@ function showApp() {
     document.getElementById("appContainer").style.display = "flex";
 }
 
+function startSession(email) {
+
+    localStorage.setItem("brightloopLoggedIn", "true");
+    localStorage.setItem("brightloopUserEmail", email);
+
+    showApp();
+    activateSidebarPage("Dashboard");
+    showPage("Dashboard");
+    applyUserInfo();
+}
+
+function handleLogin(event) {
+
+    event.preventDefault();
+    clearAuthErrors();
+
+    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
+
+    const emailError = validateEmail(email);
+    const passwordError = password ? "" : "Password is required.";
+
+    setFieldError("loginEmail", "loginEmailError", emailError);
+    setFieldError("loginPassword", "loginPasswordError", passwordError);
+
+    if (emailError || passwordError) return;
+
+    const account = accounts.find(item => item.email === email);
+
+    if (!account) {
+        setFieldError(null, "loginError", "No account found with this email. Please sign up first.");
+        return;
+    }
+
+    if (account.password !== password) {
+        setFieldError(null, "loginError", "Incorrect password. Please try again.");
+        return;
+    }
+
+    startSession(account.email);
+}
+
+function handleSignup(event) {
+
+    event.preventDefault();
+    clearAuthErrors();
+
+    const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+    const password = document.getElementById("signupPassword").value;
+    const confirmPassword = document.getElementById("signupConfirm").value;
+
+    let emailError = validateEmail(email);
+
+    // Each email can belong to only one account
+    if (!emailError && accounts.some(account => account.email === email)) {
+        emailError = "An account with this email already exists. Please log in.";
+    }
+
+    const passwordError = validatePassword(password);
+
+    let confirmError = "";
+
+    if (!passwordError) {
+        if (!confirmPassword) confirmError = "Please confirm your password.";
+        else if (confirmPassword !== password) confirmError = "Passwords do not match.";
+    }
+
+    setFieldError("signupEmail", "signupEmailError", emailError);
+    setFieldError("signupPassword", "signupPasswordError", passwordError);
+    setFieldError("signupConfirm", "signupConfirmError", confirmError);
+
+    if (emailError || passwordError || confirmError) return;
+
+    accounts.push({
+        email,
+        password,
+        createdAt: new Date().toISOString()
+    });
+
+    saveAccountsToStorage();
+
+    document.getElementById("signupForm").reset();
+    updatePasswordRules();
+
+    startSession(email);
+}
+
+
+/* ---------- USER DISPLAY ---------- */
+
+function nameFromEmail(email) {
+
+    const local = String(email).split("@")[0] || "";
+
+    return local
+        .replace(/\d+/g, "")
+        .split(/[._-]+/)
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(" ");
+}
+
+function getUserName() {
+    return nameFromEmail(localStorage.getItem("brightloopUserEmail") || "") || "User";
+}
+
+function getGreeting() {
+
+    const hour = new Date().getHours();
+
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+}
+
+function applyUserInfo() {
+
+    const name = getUserName();
+    const firstName = name.split(" ")[0];
+    const initial = firstName.charAt(0).toUpperCase();
+
+    const setText = (id, text) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = text;
+    };
+
+    setText("sidebarUserName", name);
+    setText("sidebarAvatar", initial);
+    setText("topbarAvatar", initial);
+    setText("dashboardGreeting", `${getGreeting()}, ${firstName} ✦`);
+}
+
+
+/* ---------- LOGOUT ---------- */
+
+function logout() {
+
+    if (!confirm("Log out of Brightloop?")) return;
+
+    localStorage.removeItem("brightloopLoggedIn");
+    localStorage.removeItem("brightloopUserEmail");
+    localStorage.removeItem("brightloopCurrentPage");
+
+    document.getElementById("loginForm").reset();
+    document.getElementById("signupForm").reset();
+    updatePasswordRules();
+
+    activateSidebarPage("Dashboard");
+    showAuthView("login");
+    showLoginScreen();
+}
+
+
+/* ---------- START-UP ---------- */
+
 document.addEventListener("DOMContentLoaded", function () {
-    const loginForm = document.getElementById("loginForm");
+
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("loginForm").addEventListener("submit", handleLogin);
+    document.getElementById("signupForm").addEventListener("submit", handleSignup);
+
+    // Switch between Log in and Sign up
+    document.getElementById("authSwitch").addEventListener("click", event => {
+
+        const link = event.target.closest("a[data-view]");
+        if (!link) return;
+
+        event.preventDefault();
+        showAuthView(link.dataset.view);
+    });
+
+    // Live password checklist while typing
+    document.getElementById("signupPassword").addEventListener("input", updatePasswordRules);
+
+    // Check the email as soon as the person leaves the field
+    ["loginEmail", "signupEmail"].forEach(id => {
+        document.getElementById(id).addEventListener("blur", function () {
+
+            const value = this.value.trim().toLowerCase();
+            if (!value) return;
+
+            setFieldError(id, id + "Error", validateEmail(value));
+        });
+    });
+
+    showAuthView("login");
 
     if (localStorage.getItem("brightloopLoggedIn") === "true") {
         showApp();
+        applyUserInfo();
     } else {
         showLoginScreen();
     }
-
-    loginForm.addEventListener("submit", function (event) {
-        event.preventDefault();
-
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value;
-
-        if (!email || password.length < 4) {
-            alert("Please enter a valid email and a password of at least 4 characters.");
-            return;
-        }
-
-        localStorage.setItem("brightloopLoggedIn", "true");
-        localStorage.setItem("brightloopUserEmail", email);
-
-        showApp();
-        showPage("Dashboard");
-    });
 });
-// Dashboard search
+
+
+/* =====================================================
+   18. DASHBOARD SEARCH
+===================================================== */
+
 document.addEventListener("input", function (event) {
+
     if (event.target.id !== "dashboardSearch") return;
 
     const query = event.target.value.toLowerCase().trim();
-    const rows = document.querySelectorAll("main.main-content table tbody tr");
 
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(query)
-            ? ""
-            : "none";
+    document.querySelectorAll("main.main-content table tbody tr").forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
     });
 });
+
+
+/* =====================================================
+   19. INITIAL PAGE (runs last, after everything is defined)
+===================================================== */
+
+const savedPage = localStorage.getItem("brightloopCurrentPage") || "Dashboard";
+
+activateSidebarPage(savedPage);
+showPage(savedPage);
