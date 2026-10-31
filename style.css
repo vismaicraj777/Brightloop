@@ -1430,3 +1430,116 @@ button {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Brightloop Login Page ===== */
+
+.login-screen {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    box-sizing: border-box;
+    background: linear-gradient(135deg, #eef4ff, #dce8f7, #f5f8fc);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 42px;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid #e5eaf2;
+    border-radius: 18px;
+    box-shadow: 0 20px 55px rgba(30, 58, 95, 0.12);
+}
+
+.login-card .logo {
+    color: #1e3a5f;
+    font-size: 27px;
+    font-weight: 750;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.login-card .logo-icon {
+    color: #4f80c7;
+    margin-right: 6px;
+}
+
+.login-card h1 {
+    color: #1e293b;
+    font-size: 28px;
+    text-align: center;
+    margin: 0 0 10px;
+}
+
+.login-card > p {
+    color: #64748b;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#loginForm label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#loginForm input {
+    width: 100%;
+    padding: 13px 14px;
+    box-sizing: border-box;
+    border: 1px solid #d5deea;
+    border-radius: 9px;
+    outline: none;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#loginForm input:focus {
+    border-color: #4779b9;
+    box-shadow: 0 0 0 3px rgba(71, 121, 185, 0.12);
+}
+
+#loginForm button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 9px;
+    background: #1e3a5f;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+#loginForm button:hover {
+    background: #294e7d;
+    transform: translateY(-1px);
+}
+
+.login-card .login-note {
+    margin: 22px 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 30px 24px;
+    }
+}

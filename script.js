@@ -3570,3 +3570,54 @@ function saveBrightloopSettings() {
     localStorage.setItem("brightloopSettings", JSON.stringify(settings));
     document.getElementById("settingsMessage").textContent = "Settings saved successfully!";
 }
+
+function showLoginScreen() {
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("appContainer").style.display = "none";
+}
+
+function showApp() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("appContainer").style.display = "flex";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const loginForm = document.getElementById("loginForm");
+
+    if (localStorage.getItem("brightloopLoggedIn") === "true") {
+        showApp();
+    } else {
+        showLoginScreen();
+    }
+
+    loginForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!email || password.length < 4) {
+            alert("Please enter a valid email and a password of at least 4 characters.");
+            return;
+        }
+
+        localStorage.setItem("brightloopLoggedIn", "true");
+        localStorage.setItem("brightloopUserEmail", email);
+
+        showApp();
+        showPage("Dashboard");
+    });
+});
+// Dashboard search
+document.addEventListener("input", function (event) {
+    if (event.target.id !== "dashboardSearch") return;
+
+    const query = event.target.value.toLowerCase().trim();
+    const rows = document.querySelectorAll("main.main-content table tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(query)
+            ? ""
+            : "none";
+    });
+});

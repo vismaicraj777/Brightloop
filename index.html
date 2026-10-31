@@ -9,9 +9,36 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
+
 <body>
 
-    <div class="app-container">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="logo">
+                <span class="logo-icon">✦</span>
+                brightloop
+            </div>
+
+            <h1>Welcome back!</h1>
+            <p>Log in to manage your subscriptions.</p>
+
+            <form id="loginForm">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email" required>
+
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+
+                <button type="submit">Log In</button>
+            </form>
+
+            <p class="login-note">Demo access: enter any valid email and password.</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+
 
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -56,7 +83,11 @@
 
                 <div class="search-box">
                     <span>⌕</span>
-                    <input type="text" placeholder="Search anything...">
+                    <input
+                        type="text"
+                        id="dashboardSearch"
+                        placeholder="Search customers, invoices, subscriptions..."
+                    >
                 </div>
 
                 <div class="user-section">
