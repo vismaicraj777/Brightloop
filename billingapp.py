@@ -42,16 +42,20 @@ while True:
 
         # Calculate final amount
         final_amount = amount_after_discount + tax
-        invoice_amount=final_amount
+        invoice_number = "INV" + str(len(invoices) + 1).zfill(3)
+
+        invoice_amount = final_amount
+
         invoices.append({
+            "invoice_number": invoice_number,
             "customer": customer_name,
             "amount": invoice_amount
-            })
+        })
         
         print("\n================================")
         print("             INVOICE")
         print("================================")
-
+        print("Invoice Number:",invoice_number)
         print("Customer:", customer_name)
         print("Price: ₹", price)
         print("Quantity:", quantity)
@@ -66,7 +70,14 @@ while True:
 
 
     elif choice == "2":
-        print("\nYou selected: Record Payment")
+        print("\nAvailable Invoices:")
+
+        for i, invoice in enumerate(invoices):
+            print(i + 1, ".", invoice["invoice_number"], "-", invoice["customer"])
+
+        invoice_choice = int(input("Enter invoice number to pay: "))
+
+        selected_invoice = invoices[invoice_choice - 1]
         print("Payment section will open here.")
         # Get invoice status
         status = input("Enter invoice status (Draft/Confirmed/Paid): ")
@@ -79,14 +90,13 @@ while True:
         payment_note = input("Enter payment note: ")
 
         # Calculate outstanding amount#changing to invoice amount
-        outstanding = invoice_amount - payment_amount
-        invoices[-1]["payment"] = payment_amount
-        invoices[-1]["payment_method"] = payment_method
-        invoices[-1]["payment_date"] = payment_date
-        invoices[-1]["payment_note"] = payment_note
-        invoices[-1]["outstanding"] = outstanding
-
-        # Determine payment status
+        outstanding = selected_invoice["amount"] - payment_amount
+        selected_invoice["payment"] = payment_amount
+        selected_invoice["payment_method"] = payment_method
+        selected_invoice["payment_date"] = payment_date
+        selected_invoice["payment_note"] = payment_note
+        selected_invoice["outstanding"] = outstanding
+                # Determine payment status
         if outstanding <= 0:
             payment_status = "Paid"
             outstanding = 0
