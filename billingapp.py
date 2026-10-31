@@ -7,7 +7,7 @@ while True:
     print("\n----------- MENU -----------")
     print("1. Create Invoice")
     print("2. Record Payment")
-    print("3. Revenue Report")
+    print("3. Report")
     print("4. Exit")
     print("----------------------------")
 
@@ -115,63 +115,72 @@ while True:
             
 
     elif choice == "3":
-        print("\nYou selected: Revenue Report")
-        print("Revenue report will open here.")
-        # Get number of invoices#hiding for i in range
-        print("\n================================")
-        print("        REVENUE REPORT")
-        print("================================")
-
-        total_revenue = 0
-        total_payments = 0
-        total_outstanding = 0
-
-        for invoice in invoices:
-
-            total_revenue = total_revenue + invoice["amount"]
-
-            if "payment" in invoice:
-                total_payments = total_payments + invoice["payment"]
-
-            if "outstanding" in invoice:
-                total_outstanding = total_outstanding + invoice["outstanding"]
-
-        print("Total Revenue: ₹", total_revenue)
-        print("Total Payments Received: ₹", total_payments)
-        print("Total Outstanding: ₹", total_outstanding)
-
-        print("================================")
-
+        while True:
         
-        print("\n================================")
-        print("       OVERDUE INVOICE REPORT")
-        print("================================")
+            print("\n================================")
+            print("           REPORTS")
+            print("================================")
+            print("1. Revenue Report")
+            print("2. Overdue Invoice Report")
+            print("3. Back to Main Menu")
+            print("================================")
 
-        number_of_overdue = int(input("Enter number of overdue invoices: "))
+            report_choice = input("Enter your choice: ")
 
-        total_overdue = 0
+            if report_choice == "1":
+                print("\n================================")
+                print("        REVENUE REPORT")
+                print("================================")    
 
-        for i in range(number_of_overdue):
-            print("\nOverdue Invoice", i + 1)
+                total_revenue = 0
+                total_payments = 0
+                total_outstanding = 0
 
-            invoice_number = input("Enter invoice number: ")
-            customer_name = input("Enter customer name: ")
-            outstanding_amount = float(input("Enter outstanding amount: ₹"))
+                for invoice in invoices:
 
-            total_overdue = total_overdue + outstanding_amount
+                    total_revenue = total_revenue + invoice["amount"]
 
-            print("Invoice:", invoice_number)
-            print("Customer:", customer_name)
-            print("Outstanding: ₹", outstanding_amount)
+                    if "payment" in invoice:
+                        total_payments = total_payments + invoice["payment"]
 
-        print("\n================================")
-        print("       OVERDUE SUMMARY")
-        print("================================")
+                    elif "outstanding" in invoice:
+                        total_outstanding = total_outstanding + invoice["outstanding"]
 
-        print("Number of overdue invoices:", number_of_overdue)
-        print("Total overdue amount: ₹", total_overdue)
+                print("Total Revenue: ₹", total_revenue)
+                print("Total Payments Received: ₹", total_payments)
+                print("Total Outstanding: ₹", total_outstanding)
 
-        print("================================")
+                print("================================")
+
+            elif report_choice == "2":
+                
+                print("\n================================")
+                print("      OVERDUE INVOICE REPORT")
+                print("================================")
+
+                overdue_count = 0
+                total_overdue = 0
+
+                for invoice in invoices:
+                    if "outstanding" in invoice and invoice["outstanding"] > 0:
+                        overdue_count = overdue_count + 1
+                        total_overdue = total_overdue + invoice["outstanding"]
+
+                        print("Invoice:", invoice["invoice_number"])
+                        print("Customer:", invoice["customer"])
+                        print("Outstanding: ₹", invoice["outstanding"])
+                        print("--------------------------------")
+
+                        print("Number of outstanding invoices:", overdue_count)
+                        print("Total outstanding amount: ₹", total_overdue)
+                        print("================================")
+
+            elif report_choice == "3":
+                break
+
+            else:
+                print("\nInvalid choice. Please try again.")
+       
             
 
     elif choice == "4":
