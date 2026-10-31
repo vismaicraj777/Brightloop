@@ -246,7 +246,7 @@ def create_subscription():
             INSERT INTO subscriptions
             (subscription_number, customer_id, plan_id,
              start_date, expiry_date, status)
-            VALUES (%s, %s, %s, %s, %s, 'active')
+            VALUES (%s, %s, %s, %s, %s, 'draft')
         """, (
             subscription_number,
             customer_id,
@@ -506,7 +506,176 @@ def dashboard():
     finally:
         cursor.close()
         conn.close()
+@app.route("/api/subscriptions/<int:subscription_id>/status", methods=["PUT"])
+def update_subscription_status(subscription_id):
+    data = request.get_json() or {}
+    new_status = data.get("status")
 
+    allowed_transitions = {
+        "draft": ["quotation"],
+        "quotation": ["confirmed"],
+        "confirmed": ["active"],
+        "active": ["closed"],
+        "closed": []
+    }
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT status FROM subscriptions WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        subscription = cursor.fetchone()
+
+        if not subscription:
+            return jsonify({"error": "Subscription not found"}), 404
+
+        current_status = subscription["status"]
+
+        if new_status not in allowed_transitions.get(current_status, []):
+            return jsonify({
+                "error": "Invalid status transition",
+                "current_status": current_status
+            }), 400
+
+        cursor.execute(
+            "UPDATE subscriptions SET status = %s WHERE subscription_id = %s",
+            (new_status, subscription_id)
+        )
+        conn.commit()
+
+        return jsonify({
+            "message": "Subscription status updated",
+            "subscription_id": subscription_id,
+            "old_status": current_status,
+            "new_status": new_status
+        }), 200
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Status update failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/subscriptions/<int:subscription_id>/pause", methods=["PUT"])
+def pause_subscription(subscription_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT status FROM subscriptions WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        subscription = cursor.fetchone()
+
+        if not subscription:
+            return jsonify({"error": "Subscription not found"}), 404
+
+        if subscription["status"] != "active":
+            return jsonify({"error": "Only active subscriptions can be paused"}), 400
+
+        cursor.execute(
+            "UPDATE subscriptions SET status = 'paused' WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        conn.commit()
+
+        return jsonify({"message": "Subscription paused successfully"}), 200
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Pause failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/subscriptions/<int:subscription_id>/resume", methods=["PUT"])
+def resume_subscription(subscription_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT status FROM subscriptions WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        subscription = cursor.fetchone()
+
+        if not subscription:
+            return jsonify({"error": "Subscription not found"}), 404
+
+        if subscription["status"] != "paused":
+            return jsonify({"error": "Only paused subscriptions can be resumed"}), 400
+
+        cursor.execute(
+            "UPDATE subscriptions SET status = 'active' WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        conn.commit()
+
+        return jsonify({"message": "Subscription resumed successfully"}), 200
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Resume failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+@app.route("/api/subscriptions/<int:subscription_id>/renew", methods=["POST"])
+def renew_subscription(subscription_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            "SELECT customer_id, plan_id, status FROM subscriptions WHERE subscription_id = %s",
+            (subscription_id,)
+        )
+        old_subscription = cursor.fetchone()
+
+        if not old_subscription:
+            return jsonify({"error": "Subscription not found"}), 404
+
+        if old_subscription["status"] != "closed":
+            return jsonify({"error": "Only closed subscriptions can be renewed"}), 400
+
+        new_number = "SUB-" + uuid.uuid4().hex[:8].upper()
+
+        cursor.execute(
+            """
+            INSERT INTO subscriptions
+            (subscription_number, customer_id, plan_id, start_date, status)
+            VALUES (%s, %s, %s, %s, 'draft')
+            """,
+            (
+                new_number,
+                old_subscription["customer_id"],
+                old_subscription["plan_id"],
+                date.today()
+            )
+        )
+
+        conn.commit()
+        new_id = cursor.lastrowid
+
+        return jsonify({
+            "message": "Subscription renewed successfully",
+            "new_subscription_id": new_id,
+            "status": "draft"
+        }), 201
+
+    except Exception:
+        conn.rollback()
+        return jsonify({"error": "Renewal failed"}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 if __name__ == "__main__":
     app.run(debug=True)

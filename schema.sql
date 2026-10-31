@@ -48,17 +48,11 @@ CREATE TABLE subscriptions (
     customer_id INT NOT NULL,
     plan_id INT NOT NULL,
     start_date DATE NOT NULL,
-    expiry_date DATE,
-    status ENUM(
-        'draft', 'quotation', 'confirmed',
-        'active', 'closed'
-    ) DEFAULT 'draft',
-
-    FOREIGN KEY (customer_id)
-        REFERENCES users(user_id),
-
-    FOREIGN KEY (plan_id)
-        REFERENCES plans(plan_id)
+    expiry_date DATE,closed_at DATE,
+    status ENUM('draft','quotation','confirmed','active','paused','closed') DEFAULT 'draft',
+    FOREIGN KEY (customer_id) REFERENCES users(user_id),
+    FOREIGN KEY (plan_id) REFERENCES plans(plan_id)
+);
 );
 
 -- 5. Invoices
